@@ -61,9 +61,9 @@ function MarkerRow({
       {children}
       {markers.length > 0 && (
         <div className="absolute right-0 top-0 flex flex-col gap-1 print:hidden">
-          {markers.map((marker) => (
+          {markers.map((marker, markerIndex) => (
             <InterviewMarkerBadge
-              key={marker.id}
+              key={`${marker.section}-${marker.groupIndex}-${marker.itemIndex ?? -1}-${marker.id}-${markerIndex}`}
               id={marker.id}
               accent={accent}
               onClick={() => onMarkerClick?.(marker)}

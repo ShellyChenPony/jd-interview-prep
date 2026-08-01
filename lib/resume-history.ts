@@ -1,3 +1,4 @@
+import type { ResumeInterviewMarker } from '@/lib/resume-interview';
 import type { ResumeLanguageCode } from '@/lib/resume-languages';
 import type { ResumeTemplate } from '@/lib/resume-template';
 
@@ -13,4 +14,5 @@ export type ResumeHistoryListItem = {
 export type ResumeHistoryRecord = ResumeHistoryListItem & {
   source_text: string;
   resume_json: ResumeTemplate;
+  interview_markers_json?: ResumeInterviewMarker[];
 };

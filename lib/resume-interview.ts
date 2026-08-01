@@ -64,6 +64,11 @@ export type ResumeInterviewMarker = z.infer<typeof ResumeInterviewMarkerSchema>;
 export type ResumeInterviewQuestion = ResumeInterviewMarker['questions'][number];
 export type ResumeInterviewResult = z.infer<typeof ResumeInterviewSchema>;
 
+export function parseInterviewMarkers(value: unknown): ResumeInterviewMarker[] {
+  const parsed = z.array(ResumeInterviewMarkerSchema).safeParse(value);
+  return parsed.success ? parsed.data : [];
+}
+
 export function markersForTarget(
   markers: ResumeInterviewMarker[] | undefined,
   section: ResumeInterviewMarker['section'],

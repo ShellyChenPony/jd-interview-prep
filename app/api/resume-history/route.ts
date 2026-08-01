@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { parseInterviewMarkers } from '@/lib/resume-interview';
 import {
   DEFAULT_RESUME_LANGUAGE,
   isResumeLanguageCode,
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
     sourceText?: string;
     sourceFilename?: string | null;
     language?: unknown;
+    interviewMarkers?: unknown;
   };
 
   const parsed = ResumeTemplateSchema.safeParse(payload.resume);
@@ -72,6 +74,8 @@ export async function POST(req: Request) {
   const language = isResumeLanguageCode(payload.language)
     ? payload.language
     : DEFAULT_RESUME_LANGUAGE;
+
+  const interviewMarkers = parseInterviewMarkers(payload.interviewMarkers ?? []);
 
   const resume = parsed.data;
   const supabase = getSupabaseServer();
@@ -85,6 +89,7 @@ export async function POST(req: Request) {
       source_text: typeof payload.sourceText === 'string' ? payload.sourceText : '',
       language,
       resume_json: resume,
+      interview_markers_json: interviewMarkers,
     })
     .select('id, name, job_title, source_filename, language, created_at')
     .single();

@@ -14,6 +14,7 @@ import {
 } from '@/lib/download-resume-pdf';
 import type { ResumeHistoryRecord } from '@/lib/resume-history';
 import {
+  parseInterviewMarkers,
   ResumeInterviewSchema,
   type ResumeInterviewMarker,
 } from '@/lib/resume-interview';
@@ -63,7 +64,8 @@ async function saveResumeHistory(input: {
   sourceText: string;
   sourceFilename: string | null;
   language: ResumeLanguageCode;
-}): Promise<void> {
+  interviewMarkers?: ResumeInterviewMarker[];
+}): Promise<string | null> {
   const res = await fetch('/api/resume-history', {
     method: 'POST',
     headers: {
@@ -75,17 +77,40 @@ async function saveResumeHistory(input: {
       sourceText: input.sourceText,
       sourceFilename: input.sourceFilename,
       language: input.language,
+      interviewMarkers: input.interviewMarkers ?? [],
     }),
   });
 
   if (res.status === 503) {
     // Supabase not configured — skip silently in local/demo mode.
-    return;
+    return null;
   }
+
+  const data = (await res.json()) as { item?: { id?: string }; error?: string };
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to save history');
+  }
+  return data.item?.id ?? null;
+}
+
+async function updateHistoryInterviewMarkers(
+  historyId: string,
+  interviewMarkers: ResumeInterviewMarker[]
+): Promise<void> {
+  const res = await fetch(`/api/resume-history/${historyId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-device-id': getDeviceId(),
+    },
+    body: JSON.stringify({ interviewMarkers }),
+  });
+
+  if (res.status === 503) return;
 
   if (!res.ok) {
     const data = (await res.json()) as { error?: string };
-    throw new Error(data.error || 'Failed to save history');
+    throw new Error(data.error || 'Failed to save interview markers');
   }
 }
 
@@ -100,6 +125,8 @@ export default function ResumeTemplate() {
   const [savedResume, setSavedResume] = useState<ResumeData | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [historyRecordId, setHistoryRecordId] = useState<string | null>(null);
+  const historyRecordIdRef = useRef<string | null>(null);
   const [savingHistory, setSavingHistory] = useState(false);
   const [language, setLanguage] = useState<ResumeLanguageCode>(DEFAULT_RESUME_LANGUAGE);
   const [sourceSnapshot, setSourceSnapshot] = useState('');
@@ -142,14 +169,18 @@ export default function ResumeTemplate() {
       setInterviewMarkers([]);
       setActiveMarker(null);
       setInterviewDrawerOpen(false);
+      setHistoryRecordId(null);
       setSavingHistory(true);
       try {
-        await saveResumeHistory({
+        const id = await saveResumeHistory({
           resume: parsed.data,
           sourceText: pendingSourceRef.current.text,
           sourceFilename: pendingSourceRef.current.filename,
           language: pendingSourceRef.current.language,
+          interviewMarkers: [],
         });
+        setHistoryRecordId(id);
+        historyRecordIdRef.current = id;
         setHistoryRefreshKey((n) => n + 1);
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : 'Failed to save history');
@@ -186,14 +217,43 @@ export default function ResumeTemplate() {
         return;
       }
       setInterviewFinishError(null);
-      setInterviewMarkers(
-        parsed.data.markers.map((marker) => ({
-          ...marker,
-          // Skill/project markers always anchor to the whole row.
-          itemIndex:
-            marker.section === 'experience' ? marker.itemIndex : -1,
-        }))
-      );
+      const markers = parsed.data.markers.map((marker) => ({
+        ...marker,
+        // Skill/project markers always anchor to the whole row.
+        itemIndex: marker.section === 'experience' ? marker.itemIndex : -1,
+      }));
+      setInterviewMarkers(markers);
+
+      // Persist Q markers + review links with the current history record.
+      void (async () => {
+        try {
+          const currentHistoryId = historyRecordIdRef.current;
+          if (currentHistoryId) {
+            await updateHistoryInterviewMarkers(currentHistoryId, markers);
+          } else {
+            const full =
+              savedResume ??
+              (object
+                ? coerceResumeForPdf(object as Partial<ResumeData>)
+                : null);
+            if (!full) return;
+            const id = await saveResumeHistory({
+              resume: full,
+              sourceText: pendingSourceRef.current.text || rawText,
+              sourceFilename: pendingSourceRef.current.filename ?? fileName,
+              language: pendingSourceRef.current.language || language,
+              interviewMarkers: markers,
+            });
+            setHistoryRecordId(id);
+            historyRecordIdRef.current = id;
+          }
+          setHistoryRefreshKey((n) => n + 1);
+        } catch (err) {
+          setLocalError(
+            err instanceof Error ? err.message : 'Failed to save interview markers'
+          );
+        }
+      })();
     },
   });
 
@@ -209,6 +269,10 @@ export default function ResumeTemplate() {
     // Ensure device id exists early for history APIs.
     getDeviceId();
   }, []);
+
+  useEffect(() => {
+    historyRecordIdRef.current = historyRecordId;
+  }, [historyRecordId]);
 
   const streamed = object as Partial<ResumeData> | undefined;
   const hasStreamedContent = Boolean(
@@ -250,6 +314,8 @@ export default function ResumeTemplate() {
     setInterviewMarkers([]);
     setActiveMarker(null);
     setInterviewDrawerOpen(false);
+    setHistoryRecordId(null);
+    historyRecordIdRef.current = null;
     clearInterview();
     pendingSourceRef.current = {
       text: trimmed,
@@ -362,8 +428,13 @@ export default function ResumeTemplate() {
       sourceText: nextSource,
       sourceFilename: fileName,
       language,
+      interviewMarkers,
     })
-      .then(() => setHistoryRefreshKey((n) => n + 1))
+      .then((id) => {
+        setHistoryRecordId(id);
+        historyRecordIdRef.current = id;
+        setHistoryRefreshKey((n) => n + 1);
+      })
       .catch(() => {
         // Keep local sync even if history save fails.
       });
@@ -381,6 +452,8 @@ export default function ResumeTemplate() {
     setInterviewMarkers([]);
     setActiveMarker(null);
     setInterviewDrawerOpen(false);
+    setHistoryRecordId(null);
+    historyRecordIdRef.current = null;
     clearInterview();
   };
 
@@ -449,9 +522,12 @@ export default function ResumeTemplate() {
       setSourceSnapshot(data.item.source_text || '');
       setFileName(data.item.source_filename);
       setSyncMessage(null);
-      setInterviewMarkers([]);
+      const markers = parseInterviewMarkers(data.item.interview_markers_json);
+      setInterviewMarkers(markers);
       setActiveMarker(null);
       setInterviewDrawerOpen(false);
+      setHistoryRecordId(data.item.id);
+      historyRecordIdRef.current = data.item.id;
       clearInterview();
       if (isResumeLanguageCode(data.item.language)) {
         setLanguage(data.item.language);

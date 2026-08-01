@@ -1,9 +1,12 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
+import HistoryDrawer from '@/app/components/HistoryDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
+import { getDeviceId } from '@/lib/device-id';
 import { downloadResumePdf } from '@/lib/download-resume-pdf';
+import type { ResumeHistoryRecord } from '@/lib/resume-history';
 import {
   resumeToPlainText,
   ResumeTemplateSchema,
@@ -21,7 +24,6 @@ async function extractTextFromFile(file: File): Promise<string> {
     return (await file.text()).trim();
   }
 
-  // .docx / .pdf (and fallback) via server extraction
   const formData = new FormData();
   formData.append('file', file);
   const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
@@ -32,6 +34,35 @@ async function extractTextFromFile(file: File): Promise<string> {
   return data.text;
 }
 
+async function saveResumeHistory(input: {
+  resume: ResumeData;
+  sourceText: string;
+  sourceFilename: string | null;
+}): Promise<void> {
+  const res = await fetch('/api/resume-history', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-device-id': getDeviceId(),
+    },
+    body: JSON.stringify({
+      resume: input.resume,
+      sourceText: input.sourceText,
+      sourceFilename: input.sourceFilename,
+    }),
+  });
+
+  if (res.status === 503) {
+    // Supabase not configured — skip silently in local/demo mode.
+    return;
+  }
+
+  if (!res.ok) {
+    const data = (await res.json()) as { error?: string };
+    throw new Error(data.error || 'Failed to save history');
+  }
+}
+
 export default function ResumeTemplate() {
   const [rawText, setRawText] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
@@ -40,14 +71,50 @@ export default function ResumeTemplate() {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [showSample, setShowSample] = useState(true);
+  const [savedResume, setSavedResume] = useState<ResumeData | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [savingHistory, setSavingHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingSourceRef = useRef<{ text: string; filename: string | null }>({
+    text: '',
+    filename: null,
+  });
 
   const { object, submit, isLoading, error, clear } = useObject({
     api: '/api/format-resume',
     schema: ResumeTemplateSchema,
+    onFinish: async ({ object: finished, error: finishError }) => {
+      if (finishError || !finished) return;
+      const parsed = ResumeTemplateSchema.safeParse(finished);
+      if (!parsed.success) return;
+
+      setSavedResume(parsed.data);
+      setSavingHistory(true);
+      try {
+        await saveResumeHistory({
+          resume: parsed.data,
+          sourceText: pendingSourceRef.current.text,
+          sourceFilename: pendingSourceRef.current.filename,
+        });
+        setHistoryRefreshKey((n) => n + 1);
+      } catch (err) {
+        setLocalError(err instanceof Error ? err.message : 'Failed to save history');
+      } finally {
+        setSavingHistory(false);
+      }
+    },
   });
 
-  const displayResume = (object as Partial<ResumeData> | undefined) ?? (showSample ? sampleResume : undefined);
+  useEffect(() => {
+    // Ensure device id exists early for history APIs.
+    getDeviceId();
+  }, []);
+
+  const displayResume =
+    (object as Partial<ResumeData> | undefined) ??
+    savedResume ??
+    (showSample ? sampleResume : undefined);
   const busy = isLoading || extracting;
 
   const handleFormat = (text: string) => {
@@ -55,6 +122,8 @@ export default function ResumeTemplate() {
     if (!trimmed) return;
     setLocalError(null);
     setShowSample(false);
+    setSavedResume(null);
+    pendingSourceRef.current = { text: trimmed, filename: fileName };
     submit({ resumeText: trimmed });
   };
 
@@ -89,6 +158,7 @@ export default function ResumeTemplate() {
     setFileName(null);
     setLocalError(null);
     setShowSample(true);
+    setSavedResume(null);
   };
 
   const handleCopy = async () => {
@@ -96,7 +166,7 @@ export default function ResumeTemplate() {
     try {
       const full = object
         ? ResumeTemplateSchema.parse(object)
-        : sampleResume;
+        : savedResume ?? sampleResume;
       await navigator.clipboard.writeText(resumeToPlainText(full));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
@@ -124,6 +194,31 @@ export default function ResumeTemplate() {
     }
   };
 
+  const handleSelectHistory = async (id: string) => {
+    setLocalError(null);
+    try {
+      const res = await fetch(`/api/resume-history/${id}`, {
+        headers: { 'x-device-id': getDeviceId() },
+      });
+      const data = (await res.json()) as {
+        item?: ResumeHistoryRecord;
+        error?: string;
+      };
+      if (!res.ok || !data.item) {
+        throw new Error(data.error || 'Failed to load record');
+      }
+
+      clear();
+      setShowSample(false);
+      setSavedResume(data.item.resume_json);
+      setRawText(data.item.source_text || '');
+      setFileName(data.item.source_filename);
+      setHistoryOpen(false);
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Failed to load record');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-3 print:hidden">
@@ -138,6 +233,13 @@ export default function ResumeTemplate() {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setHistoryOpen(true)}
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition"
+            >
+              History
+            </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -177,12 +279,16 @@ export default function ResumeTemplate() {
           disabled={busy || !rawText.trim()}
           className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl disabled:opacity-50 transition shadow"
         >
-          {isLoading ? 'Formatting resume...' : 'Format into template'}
+          {isLoading
+            ? 'Formatting resume...'
+            : savingHistory
+              ? 'Saving to history...'
+              : 'Format into template'}
         </button>
 
         <p className="text-xs text-gray-500">
-          Supports .txt, .md, .docx, .pdf (max 5MB). Facts are preserved; wording is polished into
-          professional English.
+          Supports .txt, .md, .docx, .pdf (max 4MB). Formatted resumes are saved to History when
+          Supabase is configured.
         </p>
 
         {(localError || error) && (
@@ -194,7 +300,7 @@ export default function ResumeTemplate() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <p className="text-sm text-gray-600">
-          {showSample && !object
+          {showSample && !object && !savedResume
             ? 'Showing sample resume. Paste or upload yours to replace it.'
             : isLoading
               ? 'Streaming formatted resume...'
@@ -229,6 +335,13 @@ export default function ResumeTemplate() {
       </div>
 
       <ResumePreview resume={displayResume} />
+
+      <HistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onSelect={handleSelectHistory}
+        refreshKey={historyRefreshKey}
+      />
     </div>
   );
 }

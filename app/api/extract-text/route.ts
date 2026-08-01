@@ -1,39 +1,51 @@
 import mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
+import { extractText, getDocumentProxy } from 'unpdf';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+/** Stay under Vercel request body limits. */
+const MAX_BYTES = 4 * 1024 * 1024;
 
 export async function POST(req: Request) {
-  const formData = await req.formData();
-  const file = formData.get('file');
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    return Response.json(
+      { error: 'Invalid upload. File may be too large for the server.' },
+      { status: 400 }
+    );
+  }
 
-  if (!(file instanceof File)) {
+  const file = formData.get('file');
+  if (!(file instanceof Blob)) {
     return Response.json({ error: 'Missing file' }, { status: 400 });
   }
 
   if (file.size > MAX_BYTES) {
-    return Response.json({ error: 'File too large (max 5MB)' }, { status: 400 });
+    return Response.json({ error: 'File too large (max 4MB)' }, { status: 400 });
   }
 
-  const name = file.name.toLowerCase();
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const name = (file instanceof File ? file.name : 'upload').toLowerCase();
+  const bytes = new Uint8Array(await file.arrayBuffer());
 
   try {
     let text = '';
 
-    if (name.endsWith('.pdf')) {
-      const parser = new PDFParse({ data: buffer });
-      const parsed = await parser.getText();
-      text = parsed.text ?? '';
-      await parser.destroy().catch(() => undefined);
-    } else if (name.endsWith('.docx')) {
-      const result = await mammoth.extractRawText({ buffer });
+    if (name.endsWith('.pdf') || file.type === 'application/pdf') {
+      const pdf = await getDocumentProxy(bytes);
+      const result = await extractText(pdf, { mergePages: true });
+      text = Array.isArray(result.text) ? result.text.join('\n') : result.text;
+    } else if (
+      name.endsWith('.docx') ||
+      file.type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      const result = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
       text = result.value ?? '';
-    } else if (name.endsWith('.txt') || name.endsWith('.md')) {
-      text = buffer.toString('utf8');
+    } else if (name.endsWith('.txt') || name.endsWith('.md') || file.type.startsWith('text/')) {
+      text = new TextDecoder('utf-8').decode(bytes);
     } else {
       return Response.json(
         { error: 'Unsupported type. Use .txt, .md, .docx, or .pdf' },
@@ -43,11 +55,16 @@ export async function POST(req: Request) {
 
     const cleaned = text.replace(/\r\n/g, '\n').trim();
     if (!cleaned) {
-      return Response.json({ error: 'No text found in file' }, { status: 400 });
+      return Response.json(
+        { error: 'No text found in file (scanned image PDFs are not supported yet)' },
+        { status: 400 }
+      );
     }
 
     return Response.json({ text: cleaned });
-  } catch {
-    return Response.json({ error: 'Failed to extract text from file' }, { status: 500 });
+  } catch (err) {
+    console.error('[extract-text]', err);
+    const message = err instanceof Error ? err.message : 'Failed to extract text from file';
+    return Response.json({ error: message }, { status: 500 });
   }
 }

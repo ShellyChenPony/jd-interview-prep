@@ -6,6 +6,10 @@ import {
   type ResumeSectionLabels,
 } from '@/lib/resume-languages';
 import type { ResumeTemplate } from '@/lib/resume-template';
+import {
+  buildResumeTheme,
+  type ResumeTheme,
+} from '@/lib/resume-themes';
 
 /** Languages that need CJK-capable rendering (default PDF fonts can't draw them). */
 const CJK_LANGUAGES = new Set<ResumeLanguageCode>(['zh-CN', 'zh-TW', 'ja', 'ko']);
@@ -144,31 +148,22 @@ function el(
 /** Resume DOM built with hex-only inline styles (no Tailwind / lab / oklch). */
 function buildPlainResumeNode(
   resume: ResumeTemplate,
-  labels: ResumeSectionLabels
+  labels: ResumeSectionLabels,
+  theme: ResumeTheme
 ): HTMLElement {
   const root = el(
     'div',
     [
       'box-sizing:border-box',
       'width:794px',
-      'padding:40px 48px',
-      'background:#ffffff',
-      'color:#171717',
+      `background:${theme.background}`,
+      `color:${theme.text}`,
       'font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Segoe UI",sans-serif',
       'line-height:1.55',
       'text-align:left',
+      'overflow:hidden',
     ].join(';')
   );
-
-  root.append(
-    el('div', 'font-size:28px;font-weight:700;margin:0 0 6px;color:#111111', [resume.name])
-  );
-
-  if (resume.title) {
-    root.append(
-      el('div', 'font-size:16px;font-weight:600;margin:0 0 10px;color:#1d4ed8', [resume.title])
-    );
-  }
 
   const contact = [
     resume.contact.email,
@@ -179,92 +174,199 @@ function buildPlainResumeNode(
   ]
     .filter(Boolean)
     .join(' · ');
-  if (contact) {
-    root.append(
-      el('div', 'font-size:12px;color:#525252;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid #e5e5e5', [
-        contact,
-      ])
-    );
-  }
 
   const sectionTitle = (title: string) =>
     el(
       'div',
-      'font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#737373;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e5e5',
+      `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.muted};margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid ${theme.accent}55`,
       [title]
     );
 
-  if (resume.summary) {
-    root.append(sectionTitle(labels.summary));
-    root.append(el('div', 'font-size:13px;color:#262626;margin:0 0 8px', [resume.summary]));
-  }
-
-  if (resume.skills.length) {
-    root.append(sectionTitle(labels.skills));
-    for (const group of resume.skills) {
-      root.append(
-        el('div', 'font-size:13px;color:#262626;margin:0 0 4px', [
-          el('span', 'font-weight:700;color:#111111', [`${group.category}: `]),
-          group.items.join(' · '),
+  if (theme.layout === 'banner') {
+    const header = el('div', `padding:28px 48px;background:${theme.accent};color:#ffffff`);
+    header.append(
+      el('div', 'font-size:28px;font-weight:700;margin:0 0 6px;color:#ffffff', [resume.name])
+    );
+    if (resume.title) {
+      header.append(
+        el('div', 'font-size:16px;font-weight:600;margin:0 0 8px;color:#ffffff', [resume.title])
+      );
+    }
+    if (contact) {
+      header.append(el('div', 'font-size:12px;color:#ffffff;opacity:0.92', [contact]));
+    }
+    root.append(header);
+  } else if (theme.layout === 'sidebar') {
+    // Handled below with a two-column shell.
+  } else {
+    const headerWrap = el('div', 'padding:40px 48px 0');
+    headerWrap.append(
+      el('div', `font-size:28px;font-weight:700;margin:0 0 6px;color:${theme.text}`, [
+        resume.name,
+      ])
+    );
+    if (resume.title) {
+      headerWrap.append(
+        el('div', `font-size:16px;font-weight:600;margin:0 0 10px;color:${theme.accent}`, [
+          resume.title,
         ])
       );
     }
-  }
-
-  if (resume.experience.length) {
-    root.append(sectionTitle(labels.experience));
-    for (const job of resume.experience) {
-      const block = el('div', 'margin:0 0 14px');
-      block.append(
-        el('div', 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap', [
-          el('div', 'font-size:14px;font-weight:700;color:#111111', [
-            `${job.role}${job.company ? ` — ${job.company}` : ''}`,
-          ]),
-          el('div', 'font-size:12px;color:#737373', [job.period]),
-        ])
-      );
-      if (job.location) {
-        block.append(el('div', 'font-size:12px;color:#737373;margin:2px 0 6px', [job.location]));
-      }
-      for (const bullet of job.bullets) {
-        block.append(el('div', 'font-size:13px;color:#262626;margin:0 0 3px;padding-left:12px', [
-          `• ${bullet}`,
-        ]));
-      }
-      root.append(block);
-    }
-  }
-
-  if (resume.education.length) {
-    root.append(sectionTitle(labels.education));
-    for (const ed of resume.education) {
-      root.append(
-        el('div', 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 6px', [
-          el('div', 'font-size:13px;color:#262626', [
-            el('span', 'font-weight:700;color:#111111', [ed.degree]),
-            ed.school ? ` — ${ed.school}` : '',
-          ]),
-          el('div', 'font-size:12px;color:#737373', [ed.period]),
-        ])
+    if (contact) {
+      headerWrap.append(
+        el(
+          'div',
+          `font-size:12px;color:${theme.muted};margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid ${theme.accent}55`,
+          [contact]
+        )
       );
     }
+    root.append(headerWrap);
   }
 
-  if (resume.projects.length) {
-    root.append(sectionTitle(labels.projects));
-    for (const project of resume.projects) {
-      const block = el('div', 'margin:0 0 12px');
-      block.append(el('div', 'font-size:13px;font-weight:700;color:#111111;margin:0 0 2px', [project.name]));
-      if (project.description) {
-        block.append(el('div', 'font-size:13px;color:#262626;margin:0 0 2px', [project.description]));
-      }
-      if (project.tech) {
-        block.append(el('div', 'font-size:12px;color:#737373', [project.tech]));
-      }
-      root.append(block);
+  const body = el(
+    'div',
+    theme.layout === 'banner' || theme.layout === 'sidebar'
+      ? 'padding:28px 48px 40px'
+      : 'padding:0 48px 40px'
+  );
+
+  const appendContent = (target: HTMLElement, includeSkills: boolean) => {
+    if (resume.summary) {
+      target.append(sectionTitle(labels.summary));
+      target.append(
+        el('div', `font-size:13px;color:${theme.text};margin:0 0 8px`, [resume.summary])
+      );
     }
+
+    if (includeSkills && resume.skills.length) {
+      target.append(sectionTitle(labels.skills));
+      for (const group of resume.skills) {
+        target.append(
+          el('div', `font-size:13px;color:${theme.text};margin:0 0 4px`, [
+            el('span', `font-weight:700;color:${theme.text}`, [`${group.category}: `]),
+            group.items.join(' · '),
+          ])
+        );
+      }
+    }
+
+    if (resume.experience.length) {
+      target.append(sectionTitle(labels.experience));
+      for (const job of resume.experience) {
+        const block = el('div', 'margin:0 0 14px');
+        block.append(
+          el('div', 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap', [
+            el('div', `font-size:14px;font-weight:700;color:${theme.text}`, [
+              `${job.role}${job.company ? ` — ${job.company}` : ''}`,
+            ]),
+            el('div', `font-size:12px;color:${theme.muted}`, [job.period]),
+          ])
+        );
+        if (job.location) {
+          block.append(
+            el('div', `font-size:12px;color:${theme.muted};margin:2px 0 6px`, [job.location])
+          );
+        }
+        for (const bullet of job.bullets) {
+          block.append(
+            el('div', `font-size:13px;color:${theme.text};margin:0 0 3px;padding-left:12px`, [
+              `• ${bullet}`,
+            ])
+          );
+        }
+        target.append(block);
+      }
+    }
+
+    if (resume.education.length) {
+      target.append(sectionTitle(labels.education));
+      for (const ed of resume.education) {
+        target.append(
+          el(
+            'div',
+            'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 6px',
+            [
+              el('div', `font-size:13px;color:${theme.text}`, [
+                el('span', `font-weight:700;color:${theme.text}`, [ed.degree]),
+                ed.school ? ` — ${ed.school}` : '',
+              ]),
+              el('div', `font-size:12px;color:${theme.muted}`, [ed.period]),
+            ]
+          )
+        );
+      }
+    }
+
+    if (resume.projects.length) {
+      target.append(sectionTitle(labels.projects));
+      for (const project of resume.projects) {
+        const block = el('div', 'margin:0 0 12px');
+        block.append(
+          el('div', `font-size:13px;font-weight:700;color:${theme.text};margin:0 0 2px`, [
+            project.name,
+          ])
+        );
+        if (project.description) {
+          block.append(
+            el('div', `font-size:13px;color:${theme.text};margin:0 0 2px`, [
+              project.description,
+            ])
+          );
+        }
+        if (project.tech) {
+          block.append(el('div', `font-size:12px;color:${theme.muted}`, [project.tech]));
+        }
+        target.append(block);
+      }
+    }
+  };
+
+  if (theme.layout === 'sidebar') {
+    const shell = el('div', 'display:flex;width:794px;min-height:1000px');
+    const aside = el(
+      'div',
+      `width:240px;box-sizing:border-box;padding:28px 20px;background:${theme.accent};color:#ffffff`
+    );
+    aside.append(
+      el('div', 'font-size:22px;font-weight:700;margin:0 0 8px;color:#ffffff', [resume.name])
+    );
+    if (resume.title) {
+      aside.append(
+        el('div', 'font-size:13px;font-weight:600;margin:0 0 16px;color:#ffffff', [resume.title])
+      );
+    }
+    if (contact) {
+      aside.append(
+        el('div', 'font-size:11px;line-height:1.5;color:#ffffff;opacity:0.95;margin:0 0 18px', [
+          contact,
+        ])
+      );
+    }
+    if (resume.skills.length) {
+      aside.append(
+        el('div', 'font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 8px;color:#ffffff', [
+          labels.skills,
+        ])
+      );
+      for (const group of resume.skills) {
+        aside.append(
+          el('div', 'font-size:11px;color:#ffffff;margin:0 0 8px', [
+            el('div', 'font-weight:700', [group.category]),
+            el('div', 'opacity:0.92;margin-top:2px', [group.items.join(' · ')]),
+          ])
+        );
+      }
+    }
+    const main = el('div', `flex:1;box-sizing:border-box;padding:28px 28px 36px;background:${theme.background}`);
+    appendContent(main, false);
+    shell.append(aside, main);
+    root.append(shell);
+    return root;
   }
 
+  appendContent(body, true);
+  root.append(body);
   return root;
 }
 
@@ -275,7 +377,8 @@ function buildPlainResumeNode(
 export async function downloadResumePdfViaPreview(
   resumeInput: ResumeTemplate | Partial<ResumeTemplate>,
   language: ResumeLanguageCode,
-  personName?: string
+  personName?: string,
+  theme: ResumeTheme = buildResumeTheme({})
 ): Promise<void> {
   const resume = coerceResumeForCjk(resumeInput);
   const labels = getSectionLabels(language);
@@ -287,13 +390,13 @@ export async function downloadResumePdfViaPreview(
       'left:-10000px',
       'top:0',
       'width:794px',
-      'background:#ffffff',
+      `background:${theme.background}`,
       'z-index:-1',
       'pointer-events:none',
     ].join(';')
   );
 
-  const node = buildPlainResumeNode(resume, labels);
+  const node = buildPlainResumeNode(resume, labels, theme);
   host.append(node);
   document.body.append(host);
 
@@ -302,15 +405,14 @@ export async function downloadResumePdfViaPreview(
     const canvas = await html2canvas(node, {
       scale: 2,
       useCORS: true,
-      backgroundColor: '#ffffff',
+      backgroundColor: theme.background,
       logging: false,
-      // Ignore any inherited stylesheet rules that use unsupported color functions.
       ignoreElements: (element) => element.tagName === 'STYLE' || element.tagName === 'LINK',
       onclone: (clonedDoc, clonedElement) => {
         clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach((n) => n.remove());
         if (clonedElement instanceof HTMLElement) {
-          clonedElement.style.backgroundColor = '#ffffff';
-          clonedElement.style.color = '#171717';
+          clonedElement.style.backgroundColor = theme.background;
+          clonedElement.style.color = theme.text;
         }
       },
     });
@@ -412,10 +514,25 @@ export function coerceResumeForPdf(input: Partial<ResumeTemplate>): ResumeTempla
 }
 
 /** Build a text-based A4 PDF from structured resume data (Latin fonts). */
+function hexToRgb(hex: string): [number, number, number] {
+  const normalized = hex.replace('#', '');
+  const full =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : normalized;
+  const value = Number.parseInt(full, 16);
+  if (Number.isNaN(value)) return [23, 23, 23];
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
 export function downloadResumePdfFromData(
   resumeInput: ResumeTemplate | Partial<ResumeTemplate>,
   personName?: string,
-  language: ResumeLanguageCode = DEFAULT_RESUME_LANGUAGE
+  language: ResumeLanguageCode = DEFAULT_RESUME_LANGUAGE,
+  theme: ResumeTheme = buildResumeTheme({})
 ): void {
   const resume = coerceResumeForPdf(resumeInput);
   const labels = getSectionLabels(language);
@@ -423,6 +540,10 @@ export function downloadResumePdfFromData(
   const margin = 14;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
+  const bg = hexToRgb(theme.background);
+  pdf.setFillColor(bg[0], bg[1], bg[2]);
+  pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
   const w: PdfWriter = {
     pdf,
     x: margin,
@@ -432,15 +553,19 @@ export function downloadResumePdfFromData(
     margin,
   };
 
+  const accentRgb = hexToRgb(theme.accent);
+  const textRgb = hexToRgb(theme.text);
+
   writeWrapped(w, resume.name, {
     fontSize: 20,
     fontStyle: 'bold',
+    color: textRgb,
     gapAfter: 2,
   });
   writeWrapped(w, resume.title, {
     fontSize: 12,
     fontStyle: 'bold',
-    color: [29, 78, 216],
+    color: accentRgb,
     gapAfter: 3,
   });
 
@@ -525,13 +650,15 @@ export async function downloadResumePdf(options: {
   language: ResumeLanguageCode;
   personName?: string;
   previewElement?: HTMLElement | null;
+  theme?: ResumeTheme;
 }): Promise<void> {
-  const { resume, language, personName } = options;
+  const { resume, language, personName, theme = buildResumeTheme({}) } = options;
 
-  if (languageNeedsCjkPdf(language)) {
-    await downloadResumePdfViaPreview(resume, language, personName);
+  // Use HTML capture for CJK fonts and for non-classic layouts (sidebar/banner/timeline).
+  if (languageNeedsCjkPdf(language) || theme.layout !== 'classic') {
+    await downloadResumePdfViaPreview(resume, language, personName, theme);
     return;
   }
 
-  downloadResumePdfFromData(resume, personName, language);
+  downloadResumePdfFromData(resume, personName, language, theme);
 }

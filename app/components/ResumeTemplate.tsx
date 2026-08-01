@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
 import HistoryDrawer from '@/app/components/HistoryDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
+import ResumeThemePicker from '@/app/components/ResumeThemePicker';
 import { getDeviceId } from '@/lib/device-id';
 import { applySourceEditsToResume } from '@/lib/apply-resume-edits';
 import {
@@ -24,6 +25,13 @@ import {
   sampleResume,
   type ResumeTemplate as ResumeData,
 } from '@/lib/resume-template';
+import {
+  buildResumeTheme,
+  DEFAULT_COLOR_PRESET_ID,
+  DEFAULT_RESUME_LAYOUT,
+  getColorPreset,
+  type ResumeLayoutId,
+} from '@/lib/resume-themes';
 
 const ACCEPTED =
   '.txt,.md,.docx,.pdf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -91,6 +99,14 @@ export default function ResumeTemplate() {
   const [language, setLanguage] = useState<ResumeLanguageCode>(DEFAULT_RESUME_LANGUAGE);
   const [sourceSnapshot, setSourceSnapshot] = useState('');
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [layout, setLayout] = useState<ResumeLayoutId>(DEFAULT_RESUME_LAYOUT);
+  const [colorPresetId, setColorPresetId] = useState(DEFAULT_COLOR_PRESET_ID);
+  const [background, setBackground] = useState(
+    () => getColorPreset(DEFAULT_COLOR_PRESET_ID).background
+  );
+  const [accent, setAccent] = useState(
+    () => getColorPreset(DEFAULT_COLOR_PRESET_ID).accent
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingSourceRef = useRef<{
     text: string;
@@ -306,6 +322,12 @@ export default function ResumeTemplate() {
         language,
         personName: full.name,
         previewElement: document.getElementById('resume-print'),
+        theme: buildResumeTheme({
+          layout,
+          presetId: colorPresetId,
+          background,
+          accent,
+        }),
       });
     } catch (err) {
       console.error('[download-pdf]', err);
@@ -452,6 +474,22 @@ export default function ResumeTemplate() {
         )}
       </form>
 
+      <ResumeThemePicker
+        layout={layout}
+        colorPresetId={colorPresetId}
+        background={background}
+        accent={accent}
+        onLayoutChange={setLayout}
+        onColorPresetChange={(presetId) => {
+          const preset = getColorPreset(presetId);
+          setColorPresetId(presetId);
+          setBackground(preset.background);
+          setAccent(preset.accent);
+        }}
+        onBackgroundChange={setBackground}
+        onAccentChange={setAccent}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <p className="text-sm text-gray-600">
           {showSample && !object && !savedResume
@@ -488,7 +526,14 @@ export default function ResumeTemplate() {
         </div>
       </div>
 
-      <ResumePreview resume={displayResume} language={language} />
+      <ResumePreview
+        resume={displayResume}
+        language={language}
+        layout={layout}
+        colorPresetId={colorPresetId}
+        background={background}
+        accent={accent}
+      />
 
       <HistoryDrawer
         open={historyOpen}

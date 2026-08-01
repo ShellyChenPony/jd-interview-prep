@@ -5,7 +5,10 @@ import { useObject } from '@ai-sdk/react';
 import HistoryDrawer from '@/app/components/HistoryDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
 import { getDeviceId } from '@/lib/device-id';
-import { downloadResumePdf } from '@/lib/download-resume-pdf';
+import {
+  coerceResumeForPdf,
+  downloadResumePdfFromData,
+} from '@/lib/download-resume-pdf';
 import type { ResumeHistoryRecord } from '@/lib/resume-history';
 import {
   resumeToPlainText,
@@ -111,11 +114,23 @@ export default function ResumeTemplate() {
     getDeviceId();
   }, []);
 
-  const displayResume =
-    (object as Partial<ResumeData> | undefined) ??
-    savedResume ??
-    (showSample ? sampleResume : undefined);
+  const streamed = object as Partial<ResumeData> | undefined;
+  const hasStreamedContent = Boolean(
+    streamed?.name || streamed?.summary || (streamed?.experience && streamed.experience.length > 0)
+  );
+  const displayResume = hasStreamedContent
+    ? streamed
+    : savedResume ?? (showSample ? sampleResume : undefined);
   const busy = isLoading || extracting;
+
+  const resolveFullResume = (): ResumeData | null => {
+    if (hasStreamedContent && streamed) {
+      return coerceResumeForPdf(streamed);
+    }
+    if (savedResume) return savedResume;
+    if (showSample) return sampleResume;
+    return null;
+  };
 
   const handleFormat = (text: string) => {
     const trimmed = text.trim();
@@ -163,32 +178,32 @@ export default function ResumeTemplate() {
 
   const handleCopy = async () => {
     if (busy) return;
-    try {
-      const full = object
-        ? ResumeTemplateSchema.parse(object)
-        : savedResume ?? sampleResume;
-      await navigator.clipboard.writeText(resumeToPlainText(full));
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
+    const full = resolveFullResume();
+    if (!full) {
       setLocalError('Resume is still incomplete — wait for formatting to finish.');
+      return;
     }
+    await navigator.clipboard.writeText(resumeToPlainText(full));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownloadPdf = async () => {
     if (busy || downloading) return;
-    const el = document.getElementById('resume-print');
-    if (!el) {
-      setLocalError('Resume preview not found.');
+    const full = resolveFullResume();
+    if (!full) {
+      setLocalError('Resume is incomplete — wait for formatting to finish, or open one from History.');
       return;
     }
 
     setDownloading(true);
     setLocalError(null);
     try {
-      await downloadResumePdf(el, displayResume?.name);
-    } catch {
-      setLocalError('Failed to generate PDF. Please try again.');
+      downloadResumePdfFromData(full, full.name);
+    } catch (err) {
+      console.error('[download-pdf]', err);
+      const detail = err instanceof Error ? err.message : 'Unknown error';
+      setLocalError(`Failed to generate PDF: ${detail}`);
     } finally {
       setDownloading(false);
     }

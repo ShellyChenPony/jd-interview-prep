@@ -1,4 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import { extractJsonMiddleware, wrapLanguageModel } from 'ai';
 
 /**
  * Shared OpenAI client.
@@ -12,3 +13,14 @@ export const openai = createOpenAI({
 
 export const defaultChatModel =
   process.env.OPENAI_MODEL?.trim() || 'deepseek-chat';
+
+/**
+ * DeepSeek (and some gateways) wrap structured JSON in ```json fences.
+ * extractJsonMiddleware strips those so Output.object / useObject can parse.
+ */
+export function getChatModel() {
+  return wrapLanguageModel({
+    model: openai(defaultChatModel),
+    middleware: extractJsonMiddleware(),
+  });
+}

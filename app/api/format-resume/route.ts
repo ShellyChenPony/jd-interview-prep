@@ -5,7 +5,7 @@ import {
   isResumeLanguageCode,
 } from '@/lib/resume-languages';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
-import { defaultChatModel, openai } from '@/lib/openai';
+import { getChatModel } from '@/lib/openai';
 
 export const maxDuration = 30;
 
@@ -26,11 +26,13 @@ export async function POST(req: Request) {
   }
 
   const result = streamText({
-    model: openai(defaultChatModel),
+    model: getChatModel(),
     output: Output.object({ schema: ResumeTemplateSchema }),
     prompt: `You are an expert resume coach for tech and remote jobs.
 
 Rewrite and reorganize the raw resume content below into a clean, professional resume in ${language.promptName} that fits our structured template.
+
+Return raw JSON only (no markdown code fences).
 
 Rules:
 - Output language MUST be ${language.promptName} for all generated fields (name can stay as-is if it is already a proper name; title, summary, skills categories, experience bullets, education, and projects must be in ${language.promptName}).

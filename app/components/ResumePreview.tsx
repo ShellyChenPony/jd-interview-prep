@@ -1,8 +1,14 @@
+import type { ReactNode } from 'react';
+import InterviewMarkerBadge from '@/app/components/InterviewMarkerBadge';
 import {
   DEFAULT_RESUME_LANGUAGE,
   getSectionLabels,
   type ResumeLanguageCode,
 } from '@/lib/resume-languages';
+import {
+  markersForTarget,
+  type ResumeInterviewMarker,
+} from '@/lib/resume-interview';
 import type { ResumeTemplate } from '@/lib/resume-template';
 import {
   buildResumeTheme,
@@ -19,6 +25,8 @@ type Props = {
   colorPresetId?: string;
   background?: string;
   accent?: string;
+  markers?: ResumeInterviewMarker[];
+  onMarkerClick?: (marker: ResumeInterviewMarker) => void;
 };
 
 const fontStack =
@@ -33,6 +41,38 @@ function contactItems(resume: Partial<ResumeTemplate>): string[] {
     contact?.linkedin,
     contact?.github,
   ].filter((item): item is string => Boolean(item));
+}
+
+function MarkerRow({
+  markers,
+  accent,
+  onMarkerClick,
+  children,
+  className = '',
+}: {
+  markers: ResumeInterviewMarker[];
+  accent: string;
+  onMarkerClick?: (marker: ResumeInterviewMarker) => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`relative pr-6 ${className}`}>
+      {children}
+      {markers.length > 0 && (
+        <div className="absolute right-0 top-0 flex flex-col gap-1 print:hidden">
+          {markers.map((marker) => (
+            <InterviewMarkerBadge
+              key={marker.id}
+              id={marker.id}
+              accent={accent}
+              onClick={() => onMarkerClick?.(marker)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SectionTitle({
@@ -68,29 +108,51 @@ function SectionTitle({
 function SkillsBlock({
   resume,
   theme,
-  compact,
+  markers,
+  onMarkerClick,
+  sidebar,
 }: {
   resume: Partial<ResumeTemplate>;
   theme: ResumeTheme;
-  compact?: boolean;
+  markers?: ResumeInterviewMarker[];
+  onMarkerClick?: (marker: ResumeInterviewMarker) => void;
+  sidebar?: boolean;
 }) {
   if (!resume.skills?.length) return null;
   return (
-    <ul className={compact ? 'space-y-2 text-sm' : 'space-y-1.5 text-sm'}>
-      {resume.skills.map((group, index) =>
-        group ? (
+    <ul className={sidebar ? 'space-y-2 text-xs' : 'space-y-1.5 text-sm'}>
+      {resume.skills.map((group, index) => {
+        if (!group) return null;
+        const rowMarkers = markersForTarget(markers, 'skill', index, -1);
+        return (
           <li key={`${group.category ?? 'skill'}-${index}`}>
-            {group.category && (
-              <span className="font-semibold" style={{ color: theme.text }}>
-                {group.category}:{' '}
+            <MarkerRow
+              markers={rowMarkers}
+              accent={sidebar ? '#ffffff' : theme.accent}
+              onMarkerClick={onMarkerClick}
+            >
+              {group.category && (
+                <span
+                  className="font-semibold"
+                  style={{ color: sidebar ? '#ffffff' : theme.text }}
+                >
+                  {group.category}
+                  {sidebar ? '' : ': '}
+                </span>
+              )}
+              <span style={{ color: sidebar ? 'rgba(255,255,255,0.9)' : theme.muted }}>
+                {sidebar ? (
+                  <span className="block mt-0.5">
+                    {(group.items ?? []).filter(Boolean).join(' · ')}
+                  </span>
+                ) : (
+                  (group.items ?? []).filter(Boolean).join(' · ')
+                )}
               </span>
-            )}
-            <span style={{ color: theme.muted }}>
-              {(group.items ?? []).filter(Boolean).join(' · ')}
-            </span>
+            </MarkerRow>
           </li>
-        ) : null
-      )}
+        );
+      })}
     </ul>
   );
 }
@@ -99,10 +161,14 @@ function ExperienceBlock({
   resume,
   theme,
   labelsExperience,
+  markers,
+  onMarkerClick,
 }: {
   resume: Partial<ResumeTemplate>;
   theme: ResumeTheme;
   labelsExperience: string;
+  markers?: ResumeInterviewMarker[];
+  onMarkerClick?: (marker: ResumeInterviewMarker) => void;
 }) {
   if (!resume.experience?.length) return null;
   return (
@@ -113,7 +179,7 @@ function ExperienceBlock({
       <div className="space-y-5">
         {resume.experience.map((job, index) =>
           job ? (
-            <div key={`${job.company ?? 'job'}-${job.role ?? index}`}>
+            <div key={`exp-${index}-${job.company ?? 'job'}-${job.role ?? 'role'}`}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <p className="font-semibold" style={{ color: theme.text }}>
                   {job.role}{' '}
@@ -136,16 +202,29 @@ function ExperienceBlock({
               )}
               {job.bullets && job.bullets.length > 0 && (
                 <ul
-                  className="list-disc list-outside ml-5 space-y-1 text-sm"
+                  className="list-disc list-outside ml-5 space-y-2 text-sm"
                   style={{ color: theme.text }}
                 >
-                  {job.bullets.map((bullet, bIdx) =>
-                    bullet ? (
+                  {job.bullets.map((bullet, bIdx) => {
+                    if (!bullet) return null;
+                    const rowMarkers = markersForTarget(
+                      markers,
+                      'experience',
+                      index,
+                      bIdx
+                    );
+                    return (
                       <li key={bIdx} className="leading-relaxed">
-                        {bullet}
+                        <MarkerRow
+                          markers={rowMarkers}
+                          accent={theme.accent}
+                          onMarkerClick={onMarkerClick}
+                        >
+                          {bullet}
+                        </MarkerRow>
                       </li>
-                    ) : null
-                  )}
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -199,10 +278,14 @@ function ProjectsBlock({
   resume,
   theme,
   label,
+  markers,
+  onMarkerClick,
 }: {
   resume: Partial<ResumeTemplate>;
   theme: ResumeTheme;
   label: string;
+  markers?: ResumeInterviewMarker[];
+  onMarkerClick?: (marker: ResumeInterviewMarker) => void;
 }) {
   if (!resume.projects?.length) return null;
   return (
@@ -211,30 +294,38 @@ function ProjectsBlock({
         {label}
       </SectionTitle>
       <div className="space-y-4">
-        {resume.projects.map((project, index) =>
-          project ? (
+        {resume.projects.map((project, index) => {
+          if (!project) return null;
+          const rowMarkers = markersForTarget(markers, 'project', index, -1);
+          return (
             <div key={`${project.name ?? 'project'}-${index}`}>
-              {project.name && (
-                <p className="font-semibold text-sm" style={{ color: theme.text }}>
-                  {project.name}
-                </p>
-              )}
-              {project.description && (
-                <p
-                  className="text-sm mt-0.5 leading-relaxed"
-                  style={{ color: theme.text }}
-                >
-                  {project.description}
-                </p>
-              )}
-              {project.tech && (
-                <p className="text-xs mt-1" style={{ color: theme.muted }}>
-                  {project.tech}
-                </p>
-              )}
+              <MarkerRow
+                markers={rowMarkers}
+                accent={theme.accent}
+                onMarkerClick={onMarkerClick}
+              >
+                {project.name && (
+                  <p className="font-semibold text-sm" style={{ color: theme.text }}>
+                    {project.name}
+                  </p>
+                )}
+                {project.description && (
+                  <p
+                    className="text-sm mt-0.5 leading-relaxed"
+                    style={{ color: theme.text }}
+                  >
+                    {project.description}
+                  </p>
+                )}
+                {project.tech && (
+                  <p className="text-xs mt-1" style={{ color: theme.muted }}>
+                    {project.tech}
+                  </p>
+                )}
+              </MarkerRow>
             </div>
-          ) : null
-        )}
+          );
+        })}
       </div>
     </section>
   );
@@ -247,6 +338,8 @@ export default function ResumePreview({
   colorPresetId = DEFAULT_COLOR_PRESET_ID,
   background,
   accent,
+  markers,
+  onMarkerClick,
 }: Props) {
   if (!resume) return null;
 
@@ -256,6 +349,26 @@ export default function ResumePreview({
 
   const shellClass =
     'border border-gray-200 rounded-2xl shadow-sm overflow-hidden print:border-0 print:shadow-none print:rounded-none';
+
+  const sharedBlocks = (
+    <>
+      <ExperienceBlock
+        resume={resume}
+        theme={theme}
+        labelsExperience={labels.experience}
+        markers={markers}
+        onMarkerClick={onMarkerClick}
+      />
+      <EducationBlock resume={resume} theme={theme} label={labels.education} />
+      <ProjectsBlock
+        resume={resume}
+        theme={theme}
+        label={labels.projects}
+        markers={markers}
+        onMarkerClick={onMarkerClick}
+      />
+    </>
+  );
 
   if (theme.layout === 'sidebar') {
     return (
@@ -286,20 +399,13 @@ export default function ResumePreview({
               <p className="text-[11px] uppercase tracking-wider text-white/70 mb-2">
                 {labels.skills}
               </p>
-              <ul className="space-y-2 text-xs text-white/95">
-                {resume.skills.map((group, index) =>
-                  group ? (
-                    <li key={`${group.category ?? 'skill'}-${index}`}>
-                      <span className="font-semibold text-white">
-                        {group.category}
-                      </span>
-                      <div className="text-white/85 mt-0.5">
-                        {(group.items ?? []).filter(Boolean).join(' · ')}
-                      </div>
-                    </li>
-                  ) : null
-                )}
-              </ul>
+              <SkillsBlock
+                resume={resume}
+                theme={theme}
+                markers={markers}
+                onMarkerClick={onMarkerClick}
+                sidebar
+              />
             </div>
           )}
         </aside>
@@ -314,13 +420,7 @@ export default function ResumePreview({
               </p>
             </section>
           )}
-          <ExperienceBlock
-            resume={resume}
-            theme={theme}
-            labelsExperience={labels.experience}
-          />
-          <EducationBlock resume={resume} theme={theme} label={labels.education} />
-          <ProjectsBlock resume={resume} theme={theme} label={labels.projects} />
+          {sharedBlocks}
         </div>
       </article>
     );
@@ -362,22 +462,20 @@ export default function ResumePreview({
               <SectionTitle theme={theme} layout={theme.layout}>
                 {labels.skills}
               </SectionTitle>
-              <SkillsBlock resume={resume} theme={theme} />
+              <SkillsBlock
+                resume={resume}
+                theme={theme}
+                markers={markers}
+                onMarkerClick={onMarkerClick}
+              />
             </section>
           )}
-          <ExperienceBlock
-            resume={resume}
-            theme={theme}
-            labelsExperience={labels.experience}
-          />
-          <EducationBlock resume={resume} theme={theme} label={labels.education} />
-          <ProjectsBlock resume={resume} theme={theme} label={labels.projects} />
+          {sharedBlocks}
         </div>
       </article>
     );
   }
 
-  // classic + timeline share a single-column structure
   return (
     <article
       id="resume-print"
@@ -426,17 +524,16 @@ export default function ResumePreview({
           <SectionTitle theme={theme} layout={theme.layout}>
             {labels.skills}
           </SectionTitle>
-          <SkillsBlock resume={resume} theme={theme} />
+          <SkillsBlock
+            resume={resume}
+            theme={theme}
+            markers={markers}
+            onMarkerClick={onMarkerClick}
+          />
         </section>
       )}
 
-      <ExperienceBlock
-        resume={resume}
-        theme={theme}
-        labelsExperience={labels.experience}
-      />
-      <EducationBlock resume={resume} theme={theme} label={labels.education} />
-      <ProjectsBlock resume={resume} theme={theme} label={labels.projects} />
+      {sharedBlocks}
     </article>
   );
 }

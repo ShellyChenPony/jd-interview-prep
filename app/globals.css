@@ -40,6 +40,13 @@ body {
     visibility: visible;
   }
 
+  /* Interview markers must never appear on printed / saved PDFs */
+  .resume-interview-marker,
+  .resume-interview-marker * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   #resume-print {
     position: absolute;
     left: 0;

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
 import HistoryDrawer from '@/app/components/HistoryDrawer';
+import InterviewQuestionDrawer from '@/app/components/InterviewQuestionDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
 import ResumeThemePicker from '@/app/components/ResumeThemePicker';
 import { getDeviceId } from '@/lib/device-id';
@@ -12,6 +13,10 @@ import {
   downloadResumePdf,
 } from '@/lib/download-resume-pdf';
 import type { ResumeHistoryRecord } from '@/lib/resume-history';
+import {
+  ResumeInterviewSchema,
+  type ResumeInterviewMarker,
+} from '@/lib/resume-interview';
 import {
   DEFAULT_RESUME_LANGUAGE,
   getResumeLanguage,
@@ -107,6 +112,11 @@ export default function ResumeTemplate() {
   const [accent, setAccent] = useState(
     () => getColorPreset(DEFAULT_COLOR_PRESET_ID).accent
   );
+  const [interviewMarkers, setInterviewMarkers] = useState<ResumeInterviewMarker[]>(
+    []
+  );
+  const [activeMarker, setActiveMarker] = useState<ResumeInterviewMarker | null>(null);
+  const [interviewDrawerOpen, setInterviewDrawerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingSourceRef = useRef<{
     text: string;
@@ -129,6 +139,9 @@ export default function ResumeTemplate() {
       setSavedResume(parsed.data);
       setSourceSnapshot(pendingSourceRef.current.text);
       setSyncMessage(null);
+      setInterviewMarkers([]);
+      setActiveMarker(null);
+      setInterviewDrawerOpen(false);
       setSavingHistory(true);
       try {
         await saveResumeHistory({
@@ -145,6 +158,52 @@ export default function ResumeTemplate() {
       }
     },
   });
+
+  const [interviewFinishError, setInterviewFinishError] = useState<string | null>(
+    null
+  );
+
+  const {
+    object: interviewObject,
+    submit: submitInterview,
+    isLoading: interviewLoading,
+    error: interviewError,
+    clear: clearInterview,
+  } = useObject({
+    api: '/api/resume-interview',
+    schema: ResumeInterviewSchema,
+    onFinish: ({ object: finished, error: finishError }) => {
+      if (finishError || !finished?.markers?.length) {
+        setInterviewFinishError(
+          finishError?.message ||
+            'No interview markers were returned. Please try again.'
+        );
+        return;
+      }
+      const parsed = ResumeInterviewSchema.safeParse(finished);
+      if (!parsed.success) {
+        setInterviewFinishError('Interview markers response was incomplete.');
+        return;
+      }
+      setInterviewFinishError(null);
+      setInterviewMarkers(
+        parsed.data.markers.map((marker) => ({
+          ...marker,
+          // Skill/project markers always anchor to the whole row.
+          itemIndex:
+            marker.section === 'experience' ? marker.itemIndex : -1,
+        }))
+      );
+    },
+  });
+
+  const liveMarkers =
+    interviewMarkers.length > 0
+      ? interviewMarkers
+      : ((interviewObject?.markers ?? []).filter(
+          (m): m is ResumeInterviewMarker =>
+            Boolean(m && typeof m.id === 'number' && m.section)
+        ) as ResumeInterviewMarker[]);
 
   useEffect(() => {
     // Ensure device id exists early for history APIs.
@@ -163,7 +222,7 @@ export default function ResumeTemplate() {
       : showSample
         ? sampleResume
         : undefined;
-  const busy = isLoading || extracting;
+  const busy = isLoading || extracting || interviewLoading;
   const hasGeneratedResume = Boolean(savedResume || (hasStreamedContent && !isLoading));
   const canSyncEdits =
     hasGeneratedResume &&
@@ -188,12 +247,39 @@ export default function ResumeTemplate() {
     setShowSample(false);
     setSavedResume(null);
     setSourceSnapshot('');
+    setInterviewMarkers([]);
+    setActiveMarker(null);
+    setInterviewDrawerOpen(false);
+    clearInterview();
     pendingSourceRef.current = {
       text: trimmed,
       filename: fileName,
       language,
     };
     submit({ resumeText: trimmed, language });
+  };
+
+  const handleGenerateInterview = () => {
+    const full = resolveFullResume();
+    if (!full || (!savedResume && !hasStreamedContent && showSample)) {
+      setLocalError('请先生成简历，再生成面试题标记。');
+      return;
+    }
+    setLocalError(null);
+    setInterviewFinishError(null);
+    const previousAnchors = interviewMarkers
+      .map((marker) => marker.anchorText)
+      .filter(Boolean)
+      .slice(0, 24);
+    setInterviewMarkers([]);
+    setActiveMarker(null);
+    setInterviewDrawerOpen(false);
+    submitInterview({
+      resume: full,
+      language,
+      // Help the model avoid repeating the same lines/questions on regenerate.
+      previousAnchors,
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -292,6 +378,10 @@ export default function ResumeTemplate() {
     setShowSample(true);
     setSavedResume(null);
     setSourceSnapshot('');
+    setInterviewMarkers([]);
+    setActiveMarker(null);
+    setInterviewDrawerOpen(false);
+    clearInterview();
   };
 
   const handleCopy = async () => {
@@ -359,6 +449,10 @@ export default function ResumeTemplate() {
       setSourceSnapshot(data.item.source_text || '');
       setFileName(data.item.source_filename);
       setSyncMessage(null);
+      setInterviewMarkers([]);
+      setActiveMarker(null);
+      setInterviewDrawerOpen(false);
+      clearInterview();
       if (isResumeLanguageCode(data.item.language)) {
         setLanguage(data.item.language);
       }
@@ -467,11 +561,6 @@ export default function ResumeTemplate() {
 
         {syncMessage && <p className="text-sm text-green-700">{syncMessage}</p>}
 
-        {(localError || error) && (
-          <p className="text-sm text-red-600">
-            {localError || 'Something went wrong while formatting. Please try again.'}
-          </p>
-        )}
       </form>
 
       <ResumeThemePicker
@@ -498,7 +587,15 @@ export default function ResumeTemplate() {
               ? 'Streaming formatted resume...'
               : 'Formatted preview'}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleGenerateInterview}
+            disabled={!hasGeneratedResume || busy || downloading}
+            className="px-4 py-2 text-sm font-medium rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 disabled:opacity-50 transition"
+          >
+            {interviewLoading ? 'Generating Q markers...' : 'Interview markers'}
+          </button>
           <button
             type="button"
             onClick={handleCopy}
@@ -526,6 +623,23 @@ export default function ResumeTemplate() {
         </div>
       </div>
 
+      {liveMarkers.length > 0 && (
+        <p className="text-xs text-indigo-700 print:hidden">
+          Circled numbers mark interview hotspots. Click a number for questions & suggested
+          answers. These markers are hidden in Print / PDF export.
+        </p>
+      )}
+
+      {(localError || error || interviewError || interviewFinishError) && (
+        <p className="text-sm text-red-600 print:hidden">
+          {localError ||
+            interviewFinishError ||
+            (interviewError
+              ? 'Failed to generate interview markers. Please try again.'
+              : 'Something went wrong while formatting. Please try again.')}
+        </p>
+      )}
+
       <ResumePreview
         resume={displayResume}
         language={language}
@@ -533,6 +647,11 @@ export default function ResumeTemplate() {
         colorPresetId={colorPresetId}
         background={background}
         accent={accent}
+        markers={liveMarkers}
+        onMarkerClick={(marker) => {
+          setActiveMarker(marker);
+          setInterviewDrawerOpen(true);
+        }}
       />
 
       <HistoryDrawer
@@ -540,6 +659,12 @@ export default function ResumeTemplate() {
         onClose={() => setHistoryOpen(false)}
         onSelect={handleSelectHistory}
         refreshKey={historyRefreshKey}
+      />
+
+      <InterviewQuestionDrawer
+        open={interviewDrawerOpen}
+        marker={activeMarker}
+        onClose={() => setInterviewDrawerOpen(false)}
       />
     </div>
   );

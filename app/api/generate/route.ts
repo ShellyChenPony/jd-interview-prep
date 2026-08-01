@@ -1,6 +1,6 @@
 import { Output, streamText } from 'ai';
 import { z } from 'zod';
-import { defaultChatModel, openai } from '@/lib/openai';
+import { getChatModel } from '@/lib/openai';
 
 export const maxDuration = 30;
 
@@ -28,10 +28,11 @@ export async function POST(req: Request) {
   }
 
   const result = streamText({
-    model: openai(defaultChatModel),
+    model: getChatModel(),
     output: Output.object({ schema: InterviewPrepSchema }),
     prompt: `你是一位硅谷顶尖的资深技术面试官与职业教练。
 请分析以下英文/中文的 Job Description (JD)，提取出最关键的 5 个英文面试问题。
+只返回原始 JSON，不要使用 markdown 代码块。
 
 JD 内容如下：
 ${jdText}

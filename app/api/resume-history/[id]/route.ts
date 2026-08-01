@@ -23,7 +23,7 @@ export async function GET(req: Request, { params }: Params) {
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
-    .select('id, name, job_title, source_filename, source_text, resume_json, created_at')
+    .select('id, name, job_title, source_filename, source_text, language, resume_json, created_at')
     .eq('id', id)
     .eq('device_id', deviceId)
     .maybeSingle();

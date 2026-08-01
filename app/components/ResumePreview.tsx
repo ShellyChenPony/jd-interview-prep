@@ -1,12 +1,22 @@
+import {
+  DEFAULT_RESUME_LANGUAGE,
+  getSectionLabels,
+  type ResumeLanguageCode,
+} from '@/lib/resume-languages';
 import type { ResumeTemplate } from '@/lib/resume-template';
 
 type Props = {
   resume: Partial<ResumeTemplate> | undefined;
+  language?: ResumeLanguageCode;
 };
 
-export default function ResumePreview({ resume }: Props) {
+export default function ResumePreview({
+  resume,
+  language = DEFAULT_RESUME_LANGUAGE,
+}: Props) {
   if (!resume) return null;
 
+  const labels = getSectionLabels(language);
   const contact = resume.contact;
   const contactLine = [
     contact?.email,
@@ -22,6 +32,7 @@ export default function ResumePreview({ resume }: Props) {
     <article
       id="resume-print"
       className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 md:p-10 text-gray-900 print:border-0 print:shadow-none print:rounded-none print:p-0"
+      style={{ fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", sans-serif' }}
     >
       <header className="border-b border-gray-200 pb-5 mb-6">
         {resume.name && (
@@ -38,7 +49,7 @@ export default function ResumePreview({ resume }: Props) {
       {resume.summary && (
         <section className="mb-6">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">
-            Summary
+            {labels.summary}
           </h3>
           <p className="text-sm leading-relaxed text-gray-800">{resume.summary}</p>
         </section>
@@ -47,7 +58,7 @@ export default function ResumePreview({ resume }: Props) {
       {resume.skills && resume.skills.length > 0 && (
         <section className="mb-6">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">
-            Skills
+            {labels.skills}
           </h3>
           <ul className="space-y-1.5 text-sm">
             {resume.skills.map((group, index) =>
@@ -69,7 +80,7 @@ export default function ResumePreview({ resume }: Props) {
       {resume.experience && resume.experience.length > 0 && (
         <section className="mb-6">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-3">
-            Experience
+            {labels.experience}
           </h3>
           <div className="space-y-5">
             {resume.experience.map((job, index) =>
@@ -108,7 +119,7 @@ export default function ResumePreview({ resume }: Props) {
       {resume.education && resume.education.length > 0 && (
         <section className="mb-6">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-3">
-            Education
+            {labels.education}
           </h3>
           {resume.education.map((ed, index) =>
             ed ? (
@@ -130,7 +141,7 @@ export default function ResumePreview({ resume }: Props) {
       {resume.projects && resume.projects.length > 0 && (
         <section>
           <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-3">
-            Projects
+            {labels.projects}
           </h3>
           <div className="space-y-4">
             {resume.projects.map((project, index) =>

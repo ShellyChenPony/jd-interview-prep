@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import {
+  DEFAULT_RESUME_LANGUAGE,
+  isResumeLanguageCode,
+} from '@/lib/resume-languages';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
 import { getSupabaseServer, isSupabaseConfigured } from '@/lib/supabase/server';
 
@@ -23,7 +27,7 @@ export async function GET(req: Request) {
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
-    .select('id, name, job_title, source_filename, created_at')
+    .select('id, name, job_title, source_filename, language, created_at')
     .eq('device_id', deviceId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -57,12 +61,17 @@ export async function POST(req: Request) {
     resume?: unknown;
     sourceText?: string;
     sourceFilename?: string | null;
+    language?: unknown;
   };
 
   const parsed = ResumeTemplateSchema.safeParse(payload.resume);
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid resume payload' }, { status: 400 });
   }
+
+  const language = isResumeLanguageCode(payload.language)
+    ? payload.language
+    : DEFAULT_RESUME_LANGUAGE;
 
   const resume = parsed.data;
   const supabase = getSupabaseServer();
@@ -74,9 +83,10 @@ export async function POST(req: Request) {
       job_title: resume.title,
       source_filename: payload.sourceFilename ?? null,
       source_text: typeof payload.sourceText === 'string' ? payload.sourceText : '',
+      language,
       resume_json: resume,
     })
-    .select('id, name, job_title, source_filename, created_at')
+    .select('id, name, job_title, source_filename, language, created_at')
     .single();
 
   if (error) {

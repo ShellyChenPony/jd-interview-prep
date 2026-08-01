@@ -1,3 +1,4 @@
+import type { ResumeLanguageCode } from '@/lib/resume-languages';
 import type { ResumeTemplate } from '@/lib/resume-template';
 
 export type ResumeHistoryListItem = {
@@ -5,6 +6,7 @@ export type ResumeHistoryListItem = {
   name: string;
   job_title: string;
   source_filename: string | null;
+  language: ResumeLanguageCode | string | null;
   created_at: string;
 };
 

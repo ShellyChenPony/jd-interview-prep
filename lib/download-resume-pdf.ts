@@ -1,5 +1,18 @@
 import { jsPDF } from 'jspdf';
+import {
+  DEFAULT_RESUME_LANGUAGE,
+  getSectionLabels,
+  type ResumeLanguageCode,
+  type ResumeSectionLabels,
+} from '@/lib/resume-languages';
 import type { ResumeTemplate } from '@/lib/resume-template';
+
+/** Languages that need CJK-capable rendering (default PDF fonts can't draw them). */
+const CJK_LANGUAGES = new Set<ResumeLanguageCode>(['zh-CN', 'zh-TW', 'ja', 'ko']);
+
+export function languageNeedsCjkPdf(language: ResumeLanguageCode): boolean {
+  return CJK_LANGUAGES.has(language);
+}
 
 function safeFilename(name: string): string {
   const cleaned = name
@@ -10,17 +23,21 @@ function safeFilename(name: string): string {
   return cleaned || 'resume';
 }
 
-/** Normalize text so standard PDF fonts don't choke on exotic glyphs. */
-function pdfText(value: unknown): string {
+function keepText(value: unknown): string {
   return String(value ?? '')
     .replace(/\u00a0/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .trim();
+}
+
+/** Normalize text for Latin-1 PDF fonts. */
+function pdfText(value: unknown): string {
+  return keepText(value)
     .replace(/[\u2010-\u2015]/g, '-')
     .replace(/[\u2018\u2019\u2032]/g, "'")
     .replace(/[\u201C\u201D\u2033]/g, '"')
     .replace(/\u2026/g, '...')
-    .replace(/[\u2022\u00B7]/g, '-')
-    .replace(/\r\n/g, '\n')
-    .trim();
+    .replace(/[\u2022\u00B7]/g, '-');
 }
 
 type PdfWriter = {
@@ -85,6 +102,269 @@ function writeSectionTitle(w: PdfWriter, title: string) {
   w.y += 3;
 }
 
+function addCanvasToPdf(canvas: HTMLCanvasElement, personName?: string) {
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 10;
+  const contentWidth = pageWidth - margin * 2;
+  const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+  let heightLeft = contentHeight;
+  let position = margin;
+
+  pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+  heightLeft -= pageHeight - margin * 2;
+
+  while (heightLeft > 0) {
+    position = margin - (contentHeight - heightLeft);
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+    heightLeft -= pageHeight - margin * 2;
+  }
+
+  pdf.save(`${safeFilename(personName ?? 'resume')}.pdf`);
+}
+
+function el(
+  tag: string,
+  styles: string,
+  children: Array<Node | string | null | undefined> = []
+): HTMLElement {
+  const node = document.createElement(tag);
+  node.setAttribute('style', styles);
+  for (const child of children) {
+    if (child == null || child === '') continue;
+    node.append(typeof child === 'string' ? document.createTextNode(child) : child);
+  }
+  return node;
+}
+
+/** Resume DOM built with hex-only inline styles (no Tailwind / lab / oklch). */
+function buildPlainResumeNode(
+  resume: ResumeTemplate,
+  labels: ResumeSectionLabels
+): HTMLElement {
+  const root = el(
+    'div',
+    [
+      'box-sizing:border-box',
+      'width:794px',
+      'padding:40px 48px',
+      'background:#ffffff',
+      'color:#171717',
+      'font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Segoe UI",sans-serif',
+      'line-height:1.55',
+      'text-align:left',
+    ].join(';')
+  );
+
+  root.append(
+    el('div', 'font-size:28px;font-weight:700;margin:0 0 6px;color:#111111', [resume.name])
+  );
+
+  if (resume.title) {
+    root.append(
+      el('div', 'font-size:16px;font-weight:600;margin:0 0 10px;color:#1d4ed8', [resume.title])
+    );
+  }
+
+  const contact = [
+    resume.contact.email,
+    resume.contact.phone,
+    resume.contact.location,
+    resume.contact.linkedin,
+    resume.contact.github,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  if (contact) {
+    root.append(
+      el('div', 'font-size:12px;color:#525252;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid #e5e5e5', [
+        contact,
+      ])
+    );
+  }
+
+  const sectionTitle = (title: string) =>
+    el(
+      'div',
+      'font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#737373;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e5e5',
+      [title]
+    );
+
+  if (resume.summary) {
+    root.append(sectionTitle(labels.summary));
+    root.append(el('div', 'font-size:13px;color:#262626;margin:0 0 8px', [resume.summary]));
+  }
+
+  if (resume.skills.length) {
+    root.append(sectionTitle(labels.skills));
+    for (const group of resume.skills) {
+      root.append(
+        el('div', 'font-size:13px;color:#262626;margin:0 0 4px', [
+          el('span', 'font-weight:700;color:#111111', [`${group.category}: `]),
+          group.items.join(' · '),
+        ])
+      );
+    }
+  }
+
+  if (resume.experience.length) {
+    root.append(sectionTitle(labels.experience));
+    for (const job of resume.experience) {
+      const block = el('div', 'margin:0 0 14px');
+      block.append(
+        el('div', 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap', [
+          el('div', 'font-size:14px;font-weight:700;color:#111111', [
+            `${job.role}${job.company ? ` — ${job.company}` : ''}`,
+          ]),
+          el('div', 'font-size:12px;color:#737373', [job.period]),
+        ])
+      );
+      if (job.location) {
+        block.append(el('div', 'font-size:12px;color:#737373;margin:2px 0 6px', [job.location]));
+      }
+      for (const bullet of job.bullets) {
+        block.append(el('div', 'font-size:13px;color:#262626;margin:0 0 3px;padding-left:12px', [
+          `• ${bullet}`,
+        ]));
+      }
+      root.append(block);
+    }
+  }
+
+  if (resume.education.length) {
+    root.append(sectionTitle(labels.education));
+    for (const ed of resume.education) {
+      root.append(
+        el('div', 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 6px', [
+          el('div', 'font-size:13px;color:#262626', [
+            el('span', 'font-weight:700;color:#111111', [ed.degree]),
+            ed.school ? ` — ${ed.school}` : '',
+          ]),
+          el('div', 'font-size:12px;color:#737373', [ed.period]),
+        ])
+      );
+    }
+  }
+
+  if (resume.projects.length) {
+    root.append(sectionTitle(labels.projects));
+    for (const project of resume.projects) {
+      const block = el('div', 'margin:0 0 12px');
+      block.append(el('div', 'font-size:13px;font-weight:700;color:#111111;margin:0 0 2px', [project.name]));
+      if (project.description) {
+        block.append(el('div', 'font-size:13px;color:#262626;margin:0 0 2px', [project.description]));
+      }
+      if (project.tech) {
+        block.append(el('div', 'font-size:12px;color:#737373', [project.tech]));
+      }
+      root.append(block);
+    }
+  }
+
+  return root;
+}
+
+/**
+ * CJK-safe export: build a hex-only offscreen resume (no page CSS),
+ * then rasterize it. Avoids html2canvas failing on lab()/oklch().
+ */
+export async function downloadResumePdfViaPreview(
+  resumeInput: ResumeTemplate | Partial<ResumeTemplate>,
+  language: ResumeLanguageCode,
+  personName?: string
+): Promise<void> {
+  const resume = coerceResumeForCjk(resumeInput);
+  const labels = getSectionLabels(language);
+  const host = document.createElement('div');
+  host.setAttribute(
+    'style',
+    [
+      'position:fixed',
+      'left:-10000px',
+      'top:0',
+      'width:794px',
+      'background:#ffffff',
+      'z-index:-1',
+      'pointer-events:none',
+    ].join(';')
+  );
+
+  const node = buildPlainResumeNode(resume, labels);
+  host.append(node);
+  document.body.append(host);
+
+  try {
+    const html2canvas = (await import('html2canvas')).default;
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      // Ignore any inherited stylesheet rules that use unsupported color functions.
+      ignoreElements: (element) => element.tagName === 'STYLE' || element.tagName === 'LINK',
+      onclone: (clonedDoc, clonedElement) => {
+        clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach((n) => n.remove());
+        if (clonedElement instanceof HTMLElement) {
+          clonedElement.style.backgroundColor = '#ffffff';
+          clonedElement.style.color = '#171717';
+        }
+      },
+    });
+    addCanvasToPdf(canvas, personName ?? resume.name);
+  } finally {
+    host.remove();
+  }
+}
+
+function coerceResumeForCjk(input: Partial<ResumeTemplate>): ResumeTemplate {
+  return {
+    name: keepText(input.name) || 'Resume',
+    title: keepText(input.title),
+    contact: {
+      email: keepText(input.contact?.email),
+      phone: keepText(input.contact?.phone),
+      location: keepText(input.contact?.location),
+      linkedin: keepText(input.contact?.linkedin),
+      github: keepText(input.contact?.github),
+    },
+    summary: keepText(input.summary),
+    skills: (input.skills ?? [])
+      .filter(Boolean)
+      .map((group) => ({
+        category: keepText(group?.category) || 'Skills',
+        items: (group?.items ?? []).filter(Boolean).map(keepText),
+      }))
+      .filter((g) => g.items.length > 0 || g.category),
+    experience: (input.experience ?? [])
+      .filter(Boolean)
+      .map((job) => ({
+        company: keepText(job?.company),
+        role: keepText(job?.role),
+        location: keepText(job?.location),
+        period: keepText(job?.period),
+        bullets: (job?.bullets ?? []).filter(Boolean).map(keepText),
+      })),
+    education: (input.education ?? [])
+      .filter(Boolean)
+      .map((ed) => ({
+        school: keepText(ed?.school),
+        degree: keepText(ed?.degree),
+        period: keepText(ed?.period),
+      })),
+    projects: (input.projects ?? [])
+      .filter(Boolean)
+      .map((project) => ({
+        name: keepText(project?.name),
+        description: keepText(project?.description),
+        tech: keepText(project?.tech),
+      })),
+  };
+}
+
 /** Fill missing fields so a visible preview can always export. */
 export function coerceResumeForPdf(input: Partial<ResumeTemplate>): ResumeTemplate {
   return {
@@ -131,12 +411,14 @@ export function coerceResumeForPdf(input: Partial<ResumeTemplate>): ResumeTempla
   };
 }
 
-/** Build a text-based A4 PDF from structured resume data (no html2canvas). */
+/** Build a text-based A4 PDF from structured resume data (Latin fonts). */
 export function downloadResumePdfFromData(
   resumeInput: ResumeTemplate | Partial<ResumeTemplate>,
-  personName?: string
+  personName?: string,
+  language: ResumeLanguageCode = DEFAULT_RESUME_LANGUAGE
 ): void {
   const resume = coerceResumeForPdf(resumeInput);
+  const labels = getSectionLabels(language);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const margin = 14;
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -176,12 +458,12 @@ export function downloadResumePdfFromData(
   }
 
   if (resume.summary) {
-    writeSectionTitle(w, 'Summary');
+    writeSectionTitle(w, labels.summary);
     writeWrapped(w, resume.summary, { fontSize: 10, gapAfter: 3 });
   }
 
   if (resume.skills.length) {
-    writeSectionTitle(w, 'Skills');
+    writeSectionTitle(w, labels.skills);
     for (const group of resume.skills) {
       writeWrapped(w, `${group.category}: ${group.items.join(', ')}`, {
         fontSize: 10,
@@ -192,7 +474,7 @@ export function downloadResumePdfFromData(
   }
 
   if (resume.experience.length) {
-    writeSectionTitle(w, 'Experience');
+    writeSectionTitle(w, labels.experience);
     for (const job of resume.experience) {
       writeWrapped(w, `${job.role}${job.company ? ` - ${job.company}` : ''}`, {
         fontSize: 11,
@@ -212,7 +494,7 @@ export function downloadResumePdfFromData(
   }
 
   if (resume.education.length) {
-    writeSectionTitle(w, 'Education');
+    writeSectionTitle(w, labels.education);
     for (const ed of resume.education) {
       writeWrapped(w, `${ed.degree}${ed.school ? ` - ${ed.school}` : ''}`, {
         fontSize: 10,
@@ -224,7 +506,7 @@ export function downloadResumePdfFromData(
   }
 
   if (resume.projects.length) {
-    writeSectionTitle(w, 'Projects');
+    writeSectionTitle(w, labels.projects);
     for (const project of resume.projects) {
       writeWrapped(w, project.name, { fontSize: 10, fontStyle: 'bold', gapAfter: 1 });
       writeWrapped(w, project.description, { fontSize: 10, gapAfter: 1 });
@@ -235,4 +517,21 @@ export function downloadResumePdfFromData(
   }
 
   pdf.save(`${safeFilename(personName ?? resume.name)}.pdf`);
+}
+
+/** Smart download: CJK via plain offscreen HTML, others via text PDF. */
+export async function downloadResumePdf(options: {
+  resume: ResumeTemplate | Partial<ResumeTemplate>;
+  language: ResumeLanguageCode;
+  personName?: string;
+  previewElement?: HTMLElement | null;
+}): Promise<void> {
+  const { resume, language, personName } = options;
+
+  if (languageNeedsCjkPdf(language)) {
+    await downloadResumePdfViaPreview(resume, language, personName);
+    return;
+  }
+
+  downloadResumePdfFromData(resume, personName, language);
 }

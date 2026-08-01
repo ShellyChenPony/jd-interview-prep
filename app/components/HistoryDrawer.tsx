@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getDeviceId } from '@/lib/device-id';
 import type { ResumeHistoryListItem } from '@/lib/resume-history';
+import { getResumeLanguage } from '@/lib/resume-languages';
 
 type Props = {
   open: boolean;
@@ -149,6 +150,7 @@ export default function HistoryDrawer({ open, onClose, onSelect, refreshKey = 0 
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
                     {formatTime(item.created_at)}
+                    {` · ${getResumeLanguage(item.language).label}`}
                     {item.source_filename ? ` · ${item.source_filename}` : ''}
                   </p>
                 </button>

@@ -5,11 +5,19 @@ import { useObject } from '@ai-sdk/react';
 import HistoryDrawer from '@/app/components/HistoryDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
 import { getDeviceId } from '@/lib/device-id';
+import { applySourceEditsToResume } from '@/lib/apply-resume-edits';
 import {
   coerceResumeForPdf,
-  downloadResumePdfFromData,
+  downloadResumePdf,
 } from '@/lib/download-resume-pdf';
 import type { ResumeHistoryRecord } from '@/lib/resume-history';
+import {
+  DEFAULT_RESUME_LANGUAGE,
+  getResumeLanguage,
+  isResumeLanguageCode,
+  RESUME_LANGUAGES,
+  type ResumeLanguageCode,
+} from '@/lib/resume-languages';
 import {
   resumeToPlainText,
   ResumeTemplateSchema,
@@ -41,6 +49,7 @@ async function saveResumeHistory(input: {
   resume: ResumeData;
   sourceText: string;
   sourceFilename: string | null;
+  language: ResumeLanguageCode;
 }): Promise<void> {
   const res = await fetch('/api/resume-history', {
     method: 'POST',
@@ -52,6 +61,7 @@ async function saveResumeHistory(input: {
       resume: input.resume,
       sourceText: input.sourceText,
       sourceFilename: input.sourceFilename,
+      language: input.language,
     }),
   });
 
@@ -78,10 +88,18 @@ export default function ResumeTemplate() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [savingHistory, setSavingHistory] = useState(false);
+  const [language, setLanguage] = useState<ResumeLanguageCode>(DEFAULT_RESUME_LANGUAGE);
+  const [sourceSnapshot, setSourceSnapshot] = useState('');
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pendingSourceRef = useRef<{ text: string; filename: string | null }>({
+  const pendingSourceRef = useRef<{
+    text: string;
+    filename: string | null;
+    language: ResumeLanguageCode;
+  }>({
     text: '',
     filename: null,
+    language: DEFAULT_RESUME_LANGUAGE,
   });
 
   const { object, submit, isLoading, error, clear } = useObject({
@@ -93,12 +111,15 @@ export default function ResumeTemplate() {
       if (!parsed.success) return;
 
       setSavedResume(parsed.data);
+      setSourceSnapshot(pendingSourceRef.current.text);
+      setSyncMessage(null);
       setSavingHistory(true);
       try {
         await saveResumeHistory({
           resume: parsed.data,
           sourceText: pendingSourceRef.current.text,
           sourceFilename: pendingSourceRef.current.filename,
+          language: pendingSourceRef.current.language,
         });
         setHistoryRefreshKey((n) => n + 1);
       } catch (err) {
@@ -118,16 +139,27 @@ export default function ResumeTemplate() {
   const hasStreamedContent = Boolean(
     streamed?.name || streamed?.summary || (streamed?.experience && streamed.experience.length > 0)
   );
-  const displayResume = hasStreamedContent
-    ? streamed
-    : savedResume ?? (showSample ? sampleResume : undefined);
+  // Prefer locally edited/saved resume over stale stream once formatting finished.
+  const displayResume = savedResume
+    ? savedResume
+    : hasStreamedContent
+      ? streamed
+      : showSample
+        ? sampleResume
+        : undefined;
   const busy = isLoading || extracting;
+  const hasGeneratedResume = Boolean(savedResume || (hasStreamedContent && !isLoading));
+  const canSyncEdits =
+    hasGeneratedResume &&
+    Boolean(sourceSnapshot.trim()) &&
+    rawText.trim() !== sourceSnapshot.trim() &&
+    !busy;
 
   const resolveFullResume = (): ResumeData | null => {
+    if (savedResume) return savedResume;
     if (hasStreamedContent && streamed) {
       return coerceResumeForPdf(streamed);
     }
-    if (savedResume) return savedResume;
     if (showSample) return sampleResume;
     return null;
   };
@@ -136,10 +168,16 @@ export default function ResumeTemplate() {
     const trimmed = text.trim();
     if (!trimmed) return;
     setLocalError(null);
+    setSyncMessage(null);
     setShowSample(false);
     setSavedResume(null);
-    pendingSourceRef.current = { text: trimmed, filename: fileName };
-    submit({ resumeText: trimmed });
+    setSourceSnapshot('');
+    pendingSourceRef.current = {
+      text: trimmed,
+      filename: fileName,
+      language,
+    };
+    submit({ resumeText: trimmed, language });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -154,12 +192,14 @@ export default function ResumeTemplate() {
 
     setExtracting(true);
     setLocalError(null);
+    setSyncMessage(null);
     setFileName(file.name);
 
     try {
       const text = await extractTextFromFile(file);
+      // Step 1 only: extract into textarea. User can edit, then Format (AI) once.
       setRawText(text);
-      handleFormat(text);
+      setShowSample(false);
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to read file');
     } finally {
@@ -167,13 +207,75 @@ export default function ResumeTemplate() {
     }
   };
 
+  const handleApplyEdits = () => {
+    const current = resolveFullResume();
+    if (!current || (!savedResume && !hasStreamedContent)) {
+      setLocalError('请先生成一份简历，再同步修改。');
+      return;
+    }
+    if (!sourceSnapshot.trim()) {
+      setLocalError('缺少生成时的原文快照，请先重新 Format 一次。');
+      return;
+    }
+
+    const nextSource = rawText.trim();
+    if (!nextSource) {
+      setLocalError('文本框不能为空。');
+      return;
+    }
+    if (nextSource === sourceSnapshot.trim()) {
+      setSyncMessage('文本没有变化。');
+      return;
+    }
+
+    const { resume: updated, replacements, hits } = applySourceEditsToResume(
+      current,
+      sourceSnapshot,
+      nextSource
+    );
+
+    if (replacements.length === 0) {
+      setLocalError('未能识别可同步的文字改动。可改姓名/电话/公司名等，或重新 Format。');
+      setSyncMessage(null);
+      return;
+    }
+    if (hits === 0) {
+      setLocalError(
+        '已检测到文本改动，但生成稿中找不到对应原文（可能已被 AI 翻译改写）。姓名/电话/公司名通常可同步；大段重写请重新 Format。'
+      );
+      setSyncMessage(null);
+      return;
+    }
+
+    clear();
+    setSavedResume(updated);
+    setSourceSnapshot(nextSource);
+    setShowSample(false);
+    setLocalError(null);
+    setSyncMessage(`已同步 ${hits} 处修改到简历（未调用 AI）。`);
+
+    // Persist the lightly-edited version without another AI call.
+    void saveResumeHistory({
+      resume: updated,
+      sourceText: nextSource,
+      sourceFilename: fileName,
+      language,
+    })
+      .then(() => setHistoryRefreshKey((n) => n + 1))
+      .catch(() => {
+        // Keep local sync even if history save fails.
+      });
+  };
+
   const handleResetSample = () => {
     clear();
     setRawText('');
     setFileName(null);
     setLocalError(null);
+    setSyncMessage(null);
     setShowSample(true);
     setSavedResume(null);
+    setSourceSnapshot('');
   };
 
   const handleCopy = async () => {
@@ -199,7 +301,12 @@ export default function ResumeTemplate() {
     setDownloading(true);
     setLocalError(null);
     try {
-      downloadResumePdfFromData(full, full.name);
+      await downloadResumePdf({
+        resume: full,
+        language,
+        personName: full.name,
+        previewElement: document.getElementById('resume-print'),
+      });
     } catch (err) {
       console.error('[download-pdf]', err);
       const detail = err instanceof Error ? err.message : 'Unknown error';
@@ -227,7 +334,12 @@ export default function ResumeTemplate() {
       setShowSample(false);
       setSavedResume(data.item.resume_json);
       setRawText(data.item.source_text || '');
+      setSourceSnapshot(data.item.source_text || '');
       setFileName(data.item.source_filename);
+      setSyncMessage(null);
+      if (isResumeLanguageCode(data.item.language)) {
+        setLanguage(data.item.language);
+      }
       setHistoryOpen(false);
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to load record');
@@ -240,14 +352,29 @@ export default function ResumeTemplate() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-sm text-gray-600">
-              Paste your resume or upload a file — we&apos;ll reorganize it into this English
-              template.
+              Upload/paste first (edit freely), then Format once with AI. Small text fixes can sync
+              into the generated resume without another AI call.
             </p>
             {fileName && (
               <p className="text-xs text-gray-500 mt-1">Loaded: {fileName}</p>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <span className="whitespace-nowrap">Language</span>
+              <select
+                value={language}
+                disabled={busy}
+                onChange={(e) => setLanguage(e.target.value as ResumeLanguageCode)}
+                className="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm disabled:opacity-50"
+              >
+                {RESUME_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
               onClick={() => setHistoryOpen(true)}
@@ -268,7 +395,7 @@ export default function ResumeTemplate() {
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
             >
-              {extracting ? 'Reading file...' : 'Upload file'}
+              {extracting ? 'Extracting text...' : 'Upload file'}
             </button>
             <button
               type="button"
@@ -289,22 +416,34 @@ export default function ResumeTemplate() {
           disabled={busy}
         />
 
-        <button
-          type="submit"
-          disabled={busy || !rawText.trim()}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl disabled:opacity-50 transition shadow"
-        >
-          {isLoading
-            ? 'Formatting resume...'
-            : savingHistory
-              ? 'Saving to history...'
-              : 'Format into template'}
-        </button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="submit"
+            disabled={busy || !rawText.trim()}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl disabled:opacity-50 transition shadow"
+          >
+            {isLoading
+              ? `Formatting in ${getResumeLanguage(language).label}...`
+              : savingHistory
+                ? 'Saving to history...'
+                : `Format with AI (${getResumeLanguage(language).label})`}
+          </button>
+          <button
+            type="button"
+            onClick={handleApplyEdits}
+            disabled={!canSyncEdits}
+            className="w-full py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium rounded-xl disabled:opacity-50 transition"
+          >
+            Sync edits to resume (no AI)
+          </button>
+        </div>
 
         <p className="text-xs text-gray-500">
-          Supports .txt, .md, .docx, .pdf (max 4MB). Formatted resumes are saved to History when
-          Supabase is configured.
+          Upload only extracts text into the box. After AI Format, tweak names/phones/companies in
+          the text and click Sync — no extra API call. Large rewrites still need Format with AI.
         </p>
+
+        {syncMessage && <p className="text-sm text-green-700">{syncMessage}</p>}
 
         {(localError || error) && (
           <p className="text-sm text-red-600">
@@ -349,7 +488,7 @@ export default function ResumeTemplate() {
         </div>
       </div>
 
-      <ResumePreview resume={displayResume} />
+      <ResumePreview resume={displayResume} language={language} />
 
       <HistoryDrawer
         open={historyOpen}

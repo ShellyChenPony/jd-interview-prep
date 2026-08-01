@@ -9,9 +9,13 @@ create table if not exists public.resume_history (
   job_title text not null default '',
   source_filename text,
   source_text text not null default '',
+  language text not null default 'en',
   resume_json jsonb not null,
   created_at timestamptz not null default now()
 );
+
+-- If you already created the table earlier, run this once:
+-- alter table public.resume_history add column if not exists language text not null default 'en';
 
 create index if not exists resume_history_device_created_idx
   on public.resume_history (device_id, created_at desc);

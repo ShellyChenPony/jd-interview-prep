@@ -1,4 +1,5 @@
 import { Output, streamText } from 'ai';
+import { enforceAiQuota } from '@/lib/ai-quota';
 import { JdResumeMatchSchema } from '@/lib/interview-prep';
 import { getChatModel } from '@/lib/openai';
 import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languages';
@@ -7,6 +8,9 @@ import { ResumeTemplateSchema } from '@/lib/resume-template';
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const denied = await enforceAiQuota(req, 'jd-match');
+  if (denied) return denied;
+
   const body = await req.json();
   const jdText = body?.jdText;
   const parsedResume = ResumeTemplateSchema.safeParse(body?.resume);

@@ -206,6 +206,26 @@ Priority: **P0** sooner · **P1** next · **P2** later.
 
 ---
 
+## AI daily quotas (promo / pre-auth)
+
+Billable AI routes are rate-limited **per UTC day** using:
+
+1. **`x-device-id`** (browser `localStorage`) — primary product quota  
+2. **Client IP** (hashed) — anti-abuse ceiling (~3× device limit)
+
+| Feature | Default device / day |
+|---------|----------------------|
+| `format-resume` | 5 |
+| `generate` / `jd-match` / `cover-letter` | 3 |
+| `practice-recommend` / `resume-interview` / `analyze-resume-template` | 5 |
+
+- Run `supabase/migration_add_ai_usage_daily.sql` (creates `ai_usage_daily` + `increment_ai_usage`).  
+- Without Supabase, counts fall back to **in-memory** (resets on server restart).  
+- Over limit → HTTP **429** with a plain-text message.  
+- Tune via env: `AI_QUOTA_*_DEVICE`, `AI_QUOTA_*_IP`, `AI_QUOTA_DEVICE_DAILY`, `AI_QUOTA_IP_SALT` (see `.env.example`).
+
+---
+
 ## Deploy notes
 
 - Deploy on Vercel (or similar). Set the same env vars in the host dashboard.

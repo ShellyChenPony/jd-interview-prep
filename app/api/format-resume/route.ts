@@ -1,4 +1,5 @@
 import { Output, streamText } from 'ai';
+import { enforceAiQuota } from '@/lib/ai-quota';
 import {
   briefToPromptBlock,
   CustomTemplateBriefSchema,
@@ -10,6 +11,9 @@ import { ResumeTemplateSchema } from '@/lib/resume-template';
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const denied = await enforceAiQuota(req, 'format-resume');
+  if (denied) return denied;
+
   const body = await req.json();
   const resumeText = body?.resumeText;
   const language = getResumeLanguage(normalizeResumeLanguage(body?.language));

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
+import { aiFetch, aiRequestHeaders } from '@/lib/ai-request-headers';
 import { useAppLanguage } from '@/lib/app-language';
 import { getDeviceId } from '@/lib/device-id';
 import type { InterviewPrepHistoryRecord } from '@/lib/interview-prep-history';
@@ -155,6 +156,9 @@ export default function InterviewPrep({
   } = useObject({
     api: '/api/generate',
     schema: InterviewPrepSchema,
+    headers: aiRequestHeaders,
+    fetch: aiFetch,
+    onError: (err) => setLocalError(err.message || 'Failed to generate questions'),
     onFinish: ({ object: finished, error: finishError }) => {
       if (finishError || !finished) return;
       const parsed = InterviewPrepSchema.safeParse(finished);
@@ -208,6 +212,9 @@ export default function InterviewPrep({
   } = useObject({
     api: '/api/jd-match',
     schema: JdResumeMatchSchema,
+    headers: aiRequestHeaders,
+    fetch: aiFetch,
+    onError: (err) => setLocalError(err.message || 'Failed to analyze JD vs resume'),
     onFinish: ({ object: finished, error: finishError }) => {
       if (finishError || !finished) return;
       const parsed = JdResumeMatchSchema.safeParse(finished);
@@ -260,6 +267,9 @@ export default function InterviewPrep({
   } = useObject({
     api: '/api/cover-letter',
     schema: CoverLetterSchema,
+    headers: aiRequestHeaders,
+    fetch: aiFetch,
+    onError: (err) => setLocalError(err.message || 'Failed to generate cover letter'),
     onFinish: ({ object: finished, error: finishError }) => {
       if (finishError || !finished) return;
       const parsed = CoverLetterSchema.safeParse(finished);
@@ -542,13 +552,13 @@ export default function InterviewPrep({
   const modeError =
     localError ||
     (mode === 'questions' && generateError
-      ? 'Failed to generate questions. Please try again.'
+      ? generateError.message || 'Failed to generate questions. Please try again.'
       : null) ||
     (mode === 'match' && matchError
-      ? 'Failed to analyze JD vs resume. Please try again.'
+      ? matchError.message || 'Failed to analyze JD vs resume. Please try again.'
       : null) ||
     (mode === 'cover' && coverError
-      ? 'Failed to generate cover letter. Please try again.'
+      ? coverError.message || 'Failed to generate cover letter. Please try again.'
       : null);
 
   return (

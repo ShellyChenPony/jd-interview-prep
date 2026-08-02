@@ -1,4 +1,5 @@
 import { Output, streamText } from 'ai';
+import { enforceAiQuota } from '@/lib/ai-quota';
 import { InterviewPrepSchema } from '@/lib/interview-prep';
 import { getChatModel } from '@/lib/openai';
 import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languages';
@@ -6,6 +7,9 @@ import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languag
 export const maxDuration = 90;
 
 export async function POST(req: Request) {
+  const denied = await enforceAiQuota(req, 'generate');
+  if (denied) return denied;
+
   const body = await req.json();
   const jdText = body?.jdText;
   const language = getResumeLanguage(normalizeResumeLanguage(body?.language));

@@ -206,6 +206,26 @@ supabase/                  # 完整 schema 与迁移
 
 ---
 
+## AI 每日配额（推广 / 未上 Auth）
+
+计费类 AI 接口按 **UTC 自然日** 限流：
+
+1. **`x-device-id`**（浏览器 `localStorage`）— 主配额  
+2. **客户端 IP**（哈希）— 防刷上限（默认约 device × 3）
+
+| 功能 | 默认每设备 / 天 |
+|------|----------------|
+| `format-resume` | 5 |
+| `generate` / `jd-match` / `cover-letter` | 3 |
+| `practice-recommend` / `resume-interview` / `analyze-resume-template` | 5 |
+
+- 请执行 `supabase/migration_add_ai_usage_daily.sql`（表 `ai_usage_daily` + 函数 `increment_ai_usage`）。  
+- 未配置 Supabase 时回退到 **内存计数**（进程重启清零）。  
+- 超限返回 HTTP **429** 与明文提示。  
+- 可用环境变量调节：`AI_QUOTA_*_DEVICE`、`AI_QUOTA_*_IP` 等（见 `.env.example`）。
+
+---
+
 ## 部署说明
 
 - 可部署到 Vercel 等平台，在控制台配置与本地相同的环境变量。

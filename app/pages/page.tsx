@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import AiQuotaBadge from '@/app/components/AiQuotaBadge';
 import InterviewPrep from '@/app/components/InterviewPrep';
 import PracticeBoard from '@/app/components/PracticeBoard';
 import PracticeSidePanel from '@/app/components/PracticeSidePanel';
@@ -30,6 +31,7 @@ function HeaderControls() {
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+      <AiQuotaBadge />
       <label className="flex items-center gap-2 text-sm text-[var(--shell-muted)]">
         <span className="hidden sm:inline whitespace-nowrap">{t.language}</span>
         <select

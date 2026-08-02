@@ -2,6 +2,7 @@
 
 import { useObject } from '@ai-sdk/react';
 import { useEffect, useRef, useState } from 'react';
+import { aiFetch, aiRequestHeaders } from '@/lib/ai-request-headers';
 import { useAppLanguage } from '@/lib/app-language';
 import {
   AnalyzedPdfTemplateSchema,
@@ -56,6 +57,9 @@ export default function CustomResumeTemplatePanel({
   const { submit: analyze, isLoading: analyzing, clear: clearAnalyze } = useObject({
     api: '/api/analyze-resume-template',
     schema: AnalyzedPdfTemplateSchema,
+    headers: aiRequestHeaders,
+    fetch: aiFetch,
+    onError: (err) => setLocalError(err.message || t.customTplUploadFail),
     onFinish: ({ object: finished, error: finishError }) => {
       const id = enrichIdRef.current;
       enrichIdRef.current = null;

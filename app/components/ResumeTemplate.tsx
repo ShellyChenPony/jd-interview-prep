@@ -6,6 +6,7 @@ import CustomResumeTemplatePanel from '@/app/components/CustomResumeTemplatePane
 import InterviewQuestionDrawer from '@/app/components/InterviewQuestionDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
 import ResumeThemePicker from '@/app/components/ResumeThemePicker';
+import { aiFetch, aiRequestHeaders } from '@/lib/ai-request-headers';
 import {
   normalizeLayout,
   toBrief,
@@ -174,6 +175,9 @@ export default function ResumeTemplate({
   const { object, submit, isLoading, error, clear } = useObject({
     api: '/api/format-resume',
     schema: ResumeTemplateSchema,
+    headers: aiRequestHeaders,
+    fetch: aiFetch,
+    onError: (err) => setLocalError(err.message || 'Formatting failed'),
     onFinish: async ({ object: finished, error: finishError }) => {
       if (finishError || !finished) return;
       const parsed = ResumeTemplateSchema.safeParse(finished);
@@ -220,6 +224,10 @@ export default function ResumeTemplate({
   } = useObject({
     api: '/api/resume-interview',
     schema: ResumeInterviewSchema,
+    headers: aiRequestHeaders,
+    fetch: aiFetch,
+    onError: (err) =>
+      setInterviewFinishError(err.message || 'Failed to generate interview markers'),
     onFinish: ({ object: finished, error: finishError }) => {
       if (finishError || !finished?.markers?.length) {
         setInterviewFinishError(
@@ -755,9 +763,9 @@ export default function ResumeTemplate({
         <p className="text-sm text-red-600 print:hidden">
           {localError ||
             interviewFinishError ||
-            (interviewError
-              ? 'Failed to generate interview markers. Please try again.'
-              : 'Something went wrong while formatting. Please try again.')}
+            interviewError?.message ||
+            error?.message ||
+            'Something went wrong while formatting. Please try again.'}
         </p>
       )}
 

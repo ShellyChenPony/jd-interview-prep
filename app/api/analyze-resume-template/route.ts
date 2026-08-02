@@ -1,4 +1,5 @@
 import { Output, streamText } from 'ai';
+import { enforceAiQuota } from '@/lib/ai-quota';
 import {
   AnalyzedPdfTemplateSchema,
   truncateTemplateText,
@@ -9,6 +10,9 @@ import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languag
 export const maxDuration = 45;
 
 export async function POST(req: Request) {
+  const denied = await enforceAiQuota(req, 'analyze-resume-template');
+  if (denied) return denied;
+
   const body = await req.json();
   const templateText = body?.templateText;
   const filename =

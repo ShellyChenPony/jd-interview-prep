@@ -2,6 +2,7 @@
 
 import { useObject } from '@ai-sdk/react';
 import { useEffect, useRef, useState } from 'react';
+import { aiFetch, aiRequestHeaders } from '@/lib/ai-request-headers';
 import { useAppLanguage } from '@/lib/app-language';
 import { getDeviceId } from '@/lib/device-id';
 import {
@@ -97,6 +98,10 @@ export default function PracticeBoard({
   } = useObject({
     api: '/api/practice-recommend',
     schema: PracticeRecommendSchema,
+    headers: aiRequestHeaders,
+    fetch: aiFetch,
+    onError: (err) =>
+      setLocalError(err.message || 'Failed to recommend problems. Please try again.'),
     onFinish: ({ object: finished, error: finishError }) => {
       if (finishError || !finished) return;
       const parsed = PracticeRecommendSchema.safeParse(finished);
@@ -263,7 +268,7 @@ export default function PracticeBoard({
   const modeError =
     localError ||
     (mode === 'recommend' && recommendError
-      ? 'Failed to recommend problems. Please try again.'
+      ? recommendError.message || 'Failed to recommend problems. Please try again.'
       : null);
 
   const renderProblemActions = (p: LeetCodeProblem) => {

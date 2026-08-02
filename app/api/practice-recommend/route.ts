@@ -1,4 +1,5 @@
 import { Output, streamText } from 'ai';
+import { enforceAiQuota } from '@/lib/ai-quota';
 import { catalogDigestForPrompt } from '@/lib/leetcode-catalog';
 import { getChatModel } from '@/lib/openai';
 import { PracticeRecommendSchema } from '@/lib/practice';
@@ -7,6 +8,9 @@ import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languag
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const denied = await enforceAiQuota(req, 'practice-recommend');
+  if (denied) return denied;
+
   const body = await req.json();
   const jdText = body?.jdText;
   const language = getResumeLanguage(normalizeResumeLanguage(body?.language));

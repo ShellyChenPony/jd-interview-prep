@@ -78,6 +78,21 @@ export type UiCopy = {
   customTplNewName: string;
   customTplEmpty: string;
   customTplActive: string;
+  quotaLoading: string;
+  quotaLoadFail: string;
+  quotaTitle: string;
+  quotaHint: string;
+  quotaRemainingToday: string;
+  quotaLowHint: string;
+  quotaExhaustedHint: string;
+  quotaResetsUtc: string;
+  quotaFeatFormat: string;
+  quotaFeatGenerate: string;
+  quotaFeatMatch: string;
+  quotaFeatCover: string;
+  quotaFeatPractice: string;
+  quotaFeatMarkers: string;
+  quotaFeatAnalyzeTpl: string;
   syncEdits: string;
   syncHint: string;
   interviewMarkers: string;
@@ -246,6 +261,22 @@ const EN: UiCopy = {
   customTplNewName: 'PDF template',
   customTplEmpty: 'No PDF templates yet. Upload one to get started.',
   customTplActive: 'Using PDF template',
+  quotaLoading: 'AI quota…',
+  quotaLoadFail: 'Could not load AI quota',
+  quotaTitle: 'Today’s free AI uses',
+  quotaHint:
+    'Free daily limits on this device (UTC). Click for details. Resets at 00:00 UTC.',
+  quotaRemainingToday: 'AI left {remaining}/{limit}',
+  quotaLowHint: 'Running low on free AI uses today.',
+  quotaExhaustedHint: 'Some AI features are out of free uses today.',
+  quotaResetsUtc: 'Resets UTC',
+  quotaFeatFormat: 'Format resume',
+  quotaFeatGenerate: '15 questions',
+  quotaFeatMatch: 'JD × Resume',
+  quotaFeatCover: 'Cover letter',
+  quotaFeatPractice: 'LeetCode recommend',
+  quotaFeatMarkers: 'Interview markers',
+  quotaFeatAnalyzeTpl: 'PDF template analyze',
   syncEdits: 'Sync edits to resume (no AI)',
   syncHint:
     'Upload only extracts text into the box. After AI Format, tweak names/phones/companies in the text and click Sync — no extra API call. Large rewrites still need Format with AI.',
@@ -423,6 +454,21 @@ const ZH_CN: UiCopy = {
   customTplNewName: 'PDF 模板',
   customTplEmpty: '还没有 PDF 模板，先上传一份吧。',
   customTplActive: '正在使用 PDF 模板',
+  quotaLoading: 'AI 次数…',
+  quotaLoadFail: '无法加载 AI 次数',
+  quotaTitle: '今日免费 AI 次数',
+  quotaHint: '按本设备统计（UTC 日）。点击查看明细。每天 00:00 UTC 重置。',
+  quotaRemainingToday: 'AI 剩余 {remaining}/{limit}',
+  quotaLowHint: '今日免费 AI 次数所剩不多。',
+  quotaExhaustedHint: '部分 AI 功能今日免费次数已用完。',
+  quotaResetsUtc: 'UTC 重置日',
+  quotaFeatFormat: '简历排版',
+  quotaFeatGenerate: '15 道题',
+  quotaFeatMatch: 'JD × 简历',
+  quotaFeatCover: '推荐信',
+  quotaFeatPractice: '刷题推荐',
+  quotaFeatMarkers: '面试标记',
+  quotaFeatAnalyzeTpl: 'PDF 模板分析',
   syncEdits: '同步修改到简历（不调用 AI）',
   syncHint:
     '上传只提取文本到输入框。AI 排版后，可改姓名/电话/公司名再点同步——不额外调用接口。大段重写仍需 AI 排版。',

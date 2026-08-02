@@ -1,4 +1,5 @@
 import { Output, streamText } from 'ai';
+import { enforceAiQuota } from '@/lib/ai-quota';
 import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languages';
 import { ResumeInterviewSchema } from '@/lib/resume-interview';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
@@ -30,6 +31,9 @@ function pickFocusAngles(count = 3): string[] {
 }
 
 export async function POST(req: Request) {
+  const denied = await enforceAiQuota(req, 'resume-interview');
+  if (denied) return denied;
+
   const body = await req.json();
   const language = getResumeLanguage(normalizeResumeLanguage(body?.language));
 

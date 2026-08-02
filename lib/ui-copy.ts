@@ -39,6 +39,21 @@ export type UiCopy = {
   practicePrimaryCategory: string;
   practiceProblems: string;
   practiceOpen: string;
+  practicePractice: string;
+  practiceBackToList: string;
+  practicePrompt: string;
+  practiceGoal: string;
+  practiceHints: string;
+  practiceStarterSql: string;
+  practiceCopySql: string;
+  practiceSqlCopied: string;
+  practiceMarkDone: string;
+  practiceMarkUndone: string;
+  practiceDone: string;
+  practiceOpenLeetcode: string;
+  practiceSqlEditorHint: string;
+  practiceKindLeetcode: string;
+  practiceKindSupabase: string;
   language: string;
   theme: string;
   themeLight: string;
@@ -177,6 +192,22 @@ const EN: UiCopy = {
   practicePrimaryCategory: 'Primary track',
   practiceProblems: 'problems',
   practiceOpen: 'Open',
+  practicePractice: 'Practice',
+  practiceBackToList: 'Back to list',
+  practicePrompt: 'Prompt',
+  practiceGoal: 'Goal',
+  practiceHints: 'Hints',
+  practiceStarterSql: 'Starter SQL',
+  practiceCopySql: 'Copy SQL',
+  practiceSqlCopied: 'Copied!',
+  practiceMarkDone: 'Mark done',
+  practiceMarkUndone: 'Mark undone',
+  practiceDone: 'Done',
+  practiceOpenLeetcode: 'Open on LeetCode',
+  practiceSqlEditorHint:
+    'Copy the starter into the Supabase SQL Editor (same project as this app). Replace YOUR_DEVICE_ID with the id from localStorage key device_id if needed.',
+  practiceKindLeetcode: 'LeetCode',
+  practiceKindSupabase: 'In-app SQL',
   language: 'Language',
   theme: 'Theme',
   themeLight: 'Light',
@@ -325,6 +356,22 @@ const ZH_CN: UiCopy = {
   practicePrimaryCategory: '主赛道',
   practiceProblems: '题',
   practiceOpen: '打开',
+  practicePractice: '练习',
+  practiceBackToList: '返回列表',
+  practicePrompt: '题目',
+  practiceGoal: '目标',
+  practiceHints: '提示',
+  practiceStarterSql: 'Starter SQL',
+  practiceCopySql: '复制 SQL',
+  practiceSqlCopied: '已复制！',
+  practiceMarkDone: '标为已完成',
+  practiceMarkUndone: '取消完成',
+  practiceDone: '已完成',
+  practiceOpenLeetcode: '在 LeetCode 打开',
+  practiceSqlEditorHint:
+    '把 starter 复制到 Supabase SQL Editor（与本应用同一项目）。如需 device_id，可从浏览器 localStorage 的 device_id 读取。',
+  practiceKindLeetcode: 'LeetCode',
+  practiceKindSupabase: '站内 SQL',
   language: '语言',
   theme: '主题',
   themeLight: '浅色',

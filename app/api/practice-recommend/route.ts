@@ -33,14 +33,15 @@ You MUST only pick problemId values from the CATALOG below (exact id strings). D
 Return raw JSON only (no markdown fences).
 
 Rules:
-1. Infer detectedRole and primaryCategory (one of: frontend, backend, fullstack, mobile, data, devops, general).
-2. focusAreas: 3-5 short topic labels (e.g. "sliding window", "graph BFS", "LRU / design").
+1. Infer detectedRole and primaryCategory (one of: frontend, backend, fullstack, mobile, data, devops, general, supabase).
+2. focusAreas: 3-5 short topic labels (e.g. "sliding window", "graph BFS", "LRU / design", "SQL / RLS").
 3. recommendations: 8-10 problems from the catalog, mix of Easy/Medium (1 Hard max unless JD is clearly senior algorithms-heavy).
 4. Prioritize problems whose categories/tags match the JD stack and interview style.
-5. priority must be "high", "medium", or "low".
-6. reason must explain relevance to THIS JD.
-7. Write detectedRole, focusAreas, and reason text in ${language.promptName}.
-8. problemId must match catalog ids exactly (e.g. "two-sum", "lru-cache").
+5. If the JD mentions Postgres, SQL, Supabase, Firebase-like BaaS, or backend data modeling, include 1-3 kind:supabase drills (ids like sb-*).
+6. priority must be "high", "medium", or "low".
+7. reason must explain relevance to THIS JD.
+8. Write detectedRole, focusAreas, and reason text in ${language.promptName}.
+9. problemId must match catalog ids exactly (e.g. "two-sum", "lru-cache", "sb-list-active-resumes").
 
 CATALOG (id|#num|title|difficulty|tags|cats):
 ${catalog}

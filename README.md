@@ -50,8 +50,12 @@ Paste a Job Description, then use three tools (results share one Prep History se
 ### 3. LeetCode Practice (`?tab=practice`)
 | Mode | What it does |
 |------|----------------|
-| **By role** | Browse curated LeetCode sets by track: Frontend, Backend, Full Stack, Mobile, Data/ML, DevOps/SRE, General SWE |
-| **From JD** | AI maps the JD to a track and recommends 8–10 catalog problems with priority and reasons (opens on leetcode.com) |
+| **By role** | Browse curated sets by track: Frontend, Backend, Full Stack, Mobile, Data/ML, DevOps/SRE, General SWE, **SQL / Supabase** |
+| **From JD** | AI maps the JD to a track and recommends 8–10 catalog problems with priority and reasons |
+
+- **LeetCode** items open on leetcode.com; click **Practice** for an in-app card (mark done locally).
+- **SQL / Supabase** drills include prompt + starter SQL for this app’s real tables — copy into the Supabase SQL Editor.
+- Add more problems in `lib/leetcode-catalog.ts` (LeetCode) or `lib/practice-problems-supabase.ts` (in-app SQL). See comments in `lib/practice-problem-types.ts`.
 
 Left panel: job-role categories + saved JD recommendation history.
 

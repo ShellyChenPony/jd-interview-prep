@@ -6,9 +6,12 @@ import { useAppLanguage } from '@/lib/app-language';
 import { getDeviceId } from '@/lib/device-id';
 import {
   JOB_CATEGORIES,
-  leetcodeUrl,
+  getProblemById,
+  problemExternalUrl,
+  problemKind,
   problemsForCategory,
   type JobCategoryId,
+  type LeetCodeProblem,
   type ProblemDifficulty,
 } from '@/lib/leetcode-catalog';
 import {
@@ -18,6 +21,7 @@ import {
   type ResolvedRecommendation,
 } from '@/lib/practice';
 import type { PracticeHistoryRecord } from '@/lib/practice-history';
+import { isPracticeDone, setPracticeDone } from '@/lib/practice-progress';
 
 type PracticeMode = 'browse' | 'recommend';
 
@@ -77,6 +81,9 @@ export default function PracticeBoard({
     useState<PracticeRecommendResult | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
+  const [doneTick, setDoneTick] = useState(0);
+  const [sqlCopied, setSqlCopied] = useState(false);
   const skipNextExternalLoadRef = useRef(false);
   const sessionIdRef = useRef<string | null>(null);
   const jdTextRef = useRef('');
@@ -135,7 +142,31 @@ export default function PracticeBoard({
   const handleSelectCategory = (id: JobCategoryId) => {
     setCategoryId(id);
     setMode('browse');
+    setActiveProblemId(null);
     onCategoryChange?.(id);
+  };
+
+  const openProblem = (id: string) => {
+    setActiveProblemId(id);
+    setMode('browse');
+    setSqlCopied(false);
+    setLocalError(null);
+  };
+
+  const toggleDone = (id: string) => {
+    const next = !isPracticeDone(id);
+    setPracticeDone(id, next);
+    setDoneTick((n) => n + 1);
+  };
+
+  const copySql = async (sql: string) => {
+    try {
+      await navigator.clipboard.writeText(sql);
+      setSqlCopied(true);
+      window.setTimeout(() => setSqlCopied(false), 2000);
+    } catch {
+      setLocalError('Failed to copy SQL');
+    }
   };
 
   const handleRecommend = () => {
@@ -201,6 +232,7 @@ export default function PracticeBoard({
     setSessionId(null);
     sessionIdRef.current = null;
     setLocalError(null);
+    setActiveProblemId(null);
     setMode('browse');
     skipNextExternalLoadRef.current = true;
     onHistorySaved?.(null);
@@ -223,12 +255,55 @@ export default function PracticeBoard({
   const category =
     JOB_CATEGORIES.find((c) => c.id === categoryId) ?? JOB_CATEGORIES[0];
   const problems = problemsForCategory(category.id);
+  const activeProblem: LeetCodeProblem | null = activeProblemId
+    ? getProblemById(activeProblemId) ?? null
+    : null;
   const isZh = language === 'zh-CN' || language.startsWith('zh');
+  void doneTick; // re-render when done flags change
   const modeError =
     localError ||
     (mode === 'recommend' && recommendError
       ? 'Failed to recommend problems. Please try again.'
       : null);
+
+  const renderProblemActions = (p: LeetCodeProblem) => {
+    const external = problemExternalUrl(p);
+    const done = isPracticeDone(p.id);
+    return (
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          className={`text-xs font-medium px-2 py-0.5 rounded-md ${difficultyClass(p.difficulty)}`}
+        >
+          {p.difficulty}
+        </span>
+        {problemKind(p) === 'supabase' ? (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-violet-100 text-violet-800">
+            {t.practiceKindSupabase}
+          </span>
+        ) : null}
+        {done ? (
+          <span className="text-xs font-medium text-emerald-700">{t.practiceDone}</span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => openProblem(p.id)}
+          className="text-sm font-medium text-orange-700 hover:underline"
+        >
+          {t.practicePractice}
+        </button>
+        {external ? (
+          <a
+            href={external}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-sky-700 hover:underline"
+          >
+            {t.practiceOpen}
+          </a>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8">
@@ -273,7 +348,146 @@ export default function PracticeBoard({
 
       {modeError && <p className="text-sm text-red-600">{modeError}</p>}
 
-      {mode === 'browse' && (
+      {mode === 'browse' && activeProblem && (
+        <section className="space-y-5" aria-labelledby="problem-detail-title">
+          <button
+            type="button"
+            onClick={() => setActiveProblemId(null)}
+            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+          >
+            ← {t.practiceBackToList}
+          </button>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-slate-500 tabular-nums">#{activeProblem.number}</p>
+                <h3
+                  id="problem-detail-title"
+                  className="text-xl font-semibold text-slate-900 mt-1"
+                >
+                  {activeProblem.title}
+                </h3>
+                <p className="text-xs text-slate-500 mt-2">
+                  {activeProblem.tags.join(' · ')}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-md ${difficultyClass(activeProblem.difficulty)}`}
+                >
+                  {activeProblem.difficulty}
+                </span>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                  {problemKind(activeProblem) === 'supabase'
+                    ? t.practiceKindSupabase
+                    : t.practiceKindLeetcode}
+                </span>
+              </div>
+            </div>
+
+            {(isZh ? activeProblem.promptZh : activeProblem.promptEn) ||
+            activeProblem.promptEn ||
+            activeProblem.promptZh ? (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  {t.practicePrompt}
+                </p>
+                <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
+                  {(isZh
+                    ? activeProblem.promptZh || activeProblem.promptEn
+                    : activeProblem.promptEn || activeProblem.promptZh) ?? ''}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600">
+                {problemKind(activeProblem) === 'leetcode'
+                  ? t.practiceOpenLeetcode
+                  : t.practicePrompt}
+              </p>
+            )}
+
+            {((isZh ? activeProblem.goalZh : activeProblem.goalEn) ||
+              activeProblem.goalEn ||
+              activeProblem.goalZh) && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  {t.practiceGoal}
+                </p>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {(isZh
+                    ? activeProblem.goalZh || activeProblem.goalEn
+                    : activeProblem.goalEn || activeProblem.goalZh) ?? ''}
+                </p>
+              </div>
+            )}
+
+            {activeProblem.hints && activeProblem.hints.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  {t.practiceHints}
+                </p>
+                <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+                  {activeProblem.hints.map((hint, idx) => (
+                    <li key={idx}>{hint}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {activeProblem.starterSql && (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t.practiceStarterSql}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void copySql(activeProblem.starterSql || '')}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {sqlCopied ? t.practiceSqlCopied : t.practiceCopySql}
+                  </button>
+                </div>
+                <pre className="overflow-x-auto rounded-xl bg-slate-900 text-slate-100 text-xs sm:text-sm p-4 leading-relaxed">
+                  {activeProblem.starterSql}
+                </pre>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {t.practiceSqlEditorHint}
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => toggleDone(activeProblem.id)}
+                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                  isPracticeDone(activeProblem.id)
+                    ? 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200'
+                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                }`}
+              >
+                {isPracticeDone(activeProblem.id)
+                  ? t.practiceMarkUndone
+                  : t.practiceMarkDone}
+              </button>
+              {problemExternalUrl(activeProblem) ? (
+                <a
+                  href={problemExternalUrl(activeProblem) || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-sky-700 hover:bg-slate-50"
+                >
+                  {t.practiceOpenLeetcode} →
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {mode === 'browse' && !activeProblem && (
         <section className="space-y-5" aria-labelledby="browse-panel-title">
           <div>
             <h3 id="browse-panel-title" className="text-lg font-semibold text-slate-900">
@@ -305,7 +519,8 @@ export default function PracticeBoard({
           </div>
 
           <p className="text-xs text-slate-500">
-            {problems.length} {t.practiceProblems} · LeetCode
+            {problems.length} {t.practiceProblems}
+            {category.id === 'supabase' ? ` · ${t.practiceKindSupabase}` : ''}
           </p>
 
           <ul className="space-y-2">
@@ -314,28 +529,18 @@ export default function PracticeBoard({
                 key={p.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3"
               >
-                <div className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => openProblem(p.id)}
+                  className="min-w-0 text-left flex-1"
+                >
                   <p className="text-sm font-medium text-slate-900">
                     <span className="text-slate-400 tabular-nums mr-2">#{p.number}</span>
                     {p.title}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">{p.tags.join(' · ')}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded-md ${difficultyClass(p.difficulty)}`}
-                  >
-                    {p.difficulty}
-                  </span>
-                  <a
-                    href={leetcodeUrl(p.slug)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-sky-700 hover:underline"
-                  >
-                    {t.practiceOpen}
-                  </a>
-                </div>
+                </button>
+                {renderProblemActions(p)}
               </li>
             ))}
           </ul>
@@ -448,14 +653,25 @@ export default function PracticeBoard({
                     {item.reason && (
                       <p className="text-sm text-slate-700 leading-relaxed">{item.reason}</p>
                     )}
-                    <a
-                      href={leetcodeUrl(item.problem.slug)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block text-sm font-medium text-sky-700 hover:underline"
-                    >
-                      {t.practiceOpen} →
-                    </a>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => openProblem(item.problemId)}
+                        className="text-sm font-medium text-orange-700 hover:underline"
+                      >
+                        {t.practicePractice} →
+                      </button>
+                      {problemExternalUrl(item.problem) ? (
+                        <a
+                          href={problemExternalUrl(item.problem) || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-sky-700 hover:underline"
+                        >
+                          {t.practiceOpenLeetcode} →
+                        </a>
+                      ) : null}
+                    </div>
                   </li>
                 ))}
               </ul>

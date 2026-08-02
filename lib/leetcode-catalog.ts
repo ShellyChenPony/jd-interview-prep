@@ -1,31 +1,25 @@
-export type ProblemDifficulty = 'Easy' | 'Medium' | 'Hard';
+/**
+ * Problem catalog for the LC / Drill tab.
+ *
+ * Add LeetCode links here; add SQL/Supabase in-app drills in
+ * `lib/practice-problems-supabase.ts` (see type comments in
+ * `lib/practice-problem-types.ts`).
+ */
+import { SUPABASE_PRACTICE_PROBLEMS } from '@/lib/practice-problems-supabase';
+import type {
+  JobCategory,
+  JobCategoryId,
+  LeetCodeProblem,
+  ProblemDifficulty,
+} from '@/lib/practice-problem-types';
 
-export type JobCategoryId =
-  | 'frontend'
-  | 'backend'
-  | 'fullstack'
-  | 'mobile'
-  | 'data'
-  | 'devops'
-  | 'general';
-
-export type JobCategory = {
-  id: JobCategoryId;
-  labelEn: string;
-  labelZh: string;
-  descriptionEn: string;
-  descriptionZh: string;
-};
-
-export type LeetCodeProblem = {
-  id: string;
-  number: number;
-  title: string;
-  slug: string;
-  difficulty: ProblemDifficulty;
-  tags: string[];
-  categories: JobCategoryId[];
-};
+export type {
+  JobCategory,
+  JobCategoryId,
+  LeetCodeProblem,
+  ProblemDifficulty,
+  ProblemKind,
+} from '@/lib/practice-problem-types';
 
 export const JOB_CATEGORIES: JobCategory[] = [
   {
@@ -77,10 +71,19 @@ export const JOB_CATEGORIES: JobCategory[] = [
     descriptionEn: 'Core Blind 75-style fundamentals for any SWE track.',
     descriptionZh: 'Blind 75 风格基础题，适合通用软件岗。',
   },
+  {
+    id: 'supabase',
+    labelEn: 'SQL / Supabase',
+    labelZh: 'SQL / Supabase',
+    descriptionEn:
+      'Practice on this app’s real tables in the Supabase SQL Editor — no LeetCode tab needed.',
+    descriptionZh:
+      '对着本项目真实表在 Supabase SQL Editor 里练——可直接在站内看题干与 starter SQL。',
+  },
 ];
 
 /** Curated LeetCode set mapped to job categories (links open leetcode.com). */
-export const LEETCODE_PROBLEMS: LeetCodeProblem[] = [
+const LEETCODE_ONLY_PROBLEMS: LeetCodeProblem[] = [
   // —— Arrays / Hashing ——
   {
     id: 'two-sum',
@@ -604,8 +607,23 @@ export const LEETCODE_PROBLEMS: LeetCodeProblem[] = [
   },
 ];
 
+/** Full catalog: LeetCode links + in-app Supabase/SQL drills. */
+export const LEETCODE_PROBLEMS: LeetCodeProblem[] = [
+  ...LEETCODE_ONLY_PROBLEMS,
+  ...SUPABASE_PRACTICE_PROBLEMS,
+];
+
+export function problemKind(p: LeetCodeProblem): 'leetcode' | 'supabase' {
+  return p.kind ?? 'leetcode';
+}
+
 export function leetcodeUrl(slug: string): string {
   return `https://leetcode.com/problems/${slug}/`;
+}
+
+export function problemExternalUrl(p: LeetCodeProblem): string | null {
+  if (problemKind(p) === 'supabase') return null;
+  return leetcodeUrl(p.slug);
 }
 
 export function getCategory(id: JobCategoryId): JobCategory | undefined {
@@ -623,6 +641,6 @@ export function getProblemById(id: string): LeetCodeProblem | undefined {
 export function catalogDigestForPrompt(): string {
   return LEETCODE_PROBLEMS.map(
     (p) =>
-      `${p.id}|#${p.number}|${p.title}|${p.difficulty}|tags:${p.tags.join(',')}|cats:${p.categories.join(',')}`
+      `${p.id}|#${p.number}|${p.title}|${p.difficulty}|kind:${problemKind(p)}|tags:${p.tags.join(',')}|cats:${p.categories.join(',')}`
   ).join('\n');
 }

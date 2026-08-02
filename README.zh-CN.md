@@ -50,8 +50,12 @@
 ### 3. LeetCode 刷题（`?tab=practice`）
 | 模式 | 作用 |
 |------|------|
-| **按岗位** | 按赛道浏览精选题库：前端、后端、全栈、移动端、数据/ML、运维/SRE、通用开发 |
-| **按 JD** | AI 识别岗位赛道，从题库推荐 8–10 道该练的题（含优先级与理由，跳转 leetcode.com） |
+| **按岗位** | 按赛道浏览：前端、后端、全栈、移动端、数据/ML、运维/SRE、通用开发、**SQL / Supabase** |
+| **按 JD** | AI 识别岗位赛道，从题库推荐 8–10 道该练的题（含优先级与理由） |
+
+- **LeetCode** 题可外链打开；点 **练习** 可在站内查看并标记完成（存在本地）。
+- **SQL / Supabase** 题含题干 + starter SQL，对着本项目真实表在 Supabase SQL Editor 里练。
+- 加题：`lib/leetcode-catalog.ts`（LeetCode）或 `lib/practice-problems-supabase.ts`（站内 SQL）。说明见 `lib/practice-problem-types.ts` 注释。
 
 左侧：岗位分类 + JD 推荐历史。
 

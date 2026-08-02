@@ -27,6 +27,7 @@ export async function GET(req: Request) {
     .from('resume_history')
     .select('id, name, job_title, source_filename, language, created_at')
     .eq('device_id', deviceId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(50);
 

@@ -35,6 +35,7 @@ export async function GET(req: Request, { params }: Params) {
     )
     .eq('id', id)
     .eq('device_id', deviceId)
+    .is('deleted_at', null)
     .maybeSingle();
 
   if (error) {
@@ -145,6 +146,7 @@ export async function PATCH(req: Request, { params }: Params) {
     .update(updates)
     .eq('id', id)
     .eq('device_id', deviceId)
+    .is('deleted_at', null)
     .select(
       'id, jd_title, job_summary, questions_json, match_json, resume_label, created_at, updated_at'
     )
@@ -173,16 +175,24 @@ export async function DELETE(req: Request, { params }: Params) {
   }
 
   const { id } = await params;
+  const now = new Date().toISOString();
   const supabase = getSupabaseServer();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('interview_prep_history')
-    .delete()
+    .update({ deleted_at: now, updated_at: now })
     .eq('id', id)
-    .eq('device_id', deviceId);
+    .eq('device_id', deviceId)
+    .is('deleted_at', null)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('[interview-prep-history DELETE]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

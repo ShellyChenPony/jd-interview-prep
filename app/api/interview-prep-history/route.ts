@@ -32,6 +32,7 @@ export async function GET(req: Request) {
       'id, jd_title, job_summary, questions_json, match_json, resume_label, created_at, updated_at'
     )
     .eq('device_id', deviceId)
+    .is('deleted_at', null)
     .order('updated_at', { ascending: false })
     .limit(50);
 

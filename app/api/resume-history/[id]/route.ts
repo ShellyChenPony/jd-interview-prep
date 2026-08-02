@@ -29,6 +29,7 @@ export async function GET(req: Request, { params }: Params) {
     )
     .eq('id', id)
     .eq('device_id', deviceId)
+    .is('deleted_at', null)
     .maybeSingle();
 
   if (error) {
@@ -108,6 +109,7 @@ export async function PATCH(req: Request, { params }: Params) {
     .update(updates)
     .eq('id', id)
     .eq('device_id', deviceId)
+    .is('deleted_at', null)
     .select('id, name, job_title, source_filename, language, created_at')
     .maybeSingle();
 
@@ -135,15 +137,22 @@ export async function DELETE(req: Request, { params }: Params) {
 
   const { id } = await params;
   const supabase = getSupabaseServer();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('resume_history')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('device_id', deviceId);
+    .eq('device_id', deviceId)
+    .is('deleted_at', null)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('[resume-history DELETE]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
-import HistoryDrawer from '@/app/components/HistoryDrawer';
 import InterviewQuestionDrawer from '@/app/components/InterviewQuestionDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
 import ResumeThemePicker from '@/app/components/ResumeThemePicker';
@@ -114,7 +113,17 @@ async function updateHistoryInterviewMarkers(
   }
 }
 
-export default function ResumeTemplate() {
+type Props = {
+  activeHistoryId?: string | null;
+  resetKey?: number;
+  onHistorySaved?: (id: string | null) => void;
+};
+
+export default function ResumeTemplate({
+  activeHistoryId = null,
+  resetKey = 0,
+  onHistorySaved,
+}: Props) {
   const [rawText, setRawText] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -123,10 +132,9 @@ export default function ResumeTemplate() {
   const [downloading, setDownloading] = useState(false);
   const [showSample, setShowSample] = useState(true);
   const [savedResume, setSavedResume] = useState<ResumeData | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [historyRecordId, setHistoryRecordId] = useState<string | null>(null);
   const historyRecordIdRef = useRef<string | null>(null);
+  const skipNextExternalLoadRef = useRef(false);
   const [savingHistory, setSavingHistory] = useState(false);
   const [language, setLanguage] = useState<ResumeLanguageCode>(DEFAULT_RESUME_LANGUAGE);
   const [sourceSnapshot, setSourceSnapshot] = useState('');
@@ -181,7 +189,8 @@ export default function ResumeTemplate() {
         });
         setHistoryRecordId(id);
         historyRecordIdRef.current = id;
-        setHistoryRefreshKey((n) => n + 1);
+        skipNextExternalLoadRef.current = true;
+        onHistorySaved?.(id);
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : 'Failed to save history');
       } finally {
@@ -230,6 +239,7 @@ export default function ResumeTemplate() {
           const currentHistoryId = historyRecordIdRef.current;
           if (currentHistoryId) {
             await updateHistoryInterviewMarkers(currentHistoryId, markers);
+            onHistorySaved?.(currentHistoryId);
           } else {
             const full =
               savedResume ??
@@ -246,8 +256,9 @@ export default function ResumeTemplate() {
             });
             setHistoryRecordId(id);
             historyRecordIdRef.current = id;
+            skipNextExternalLoadRef.current = true;
+            onHistorySaved?.(id);
           }
-          setHistoryRefreshKey((n) => n + 1);
         } catch (err) {
           setLocalError(
             err instanceof Error ? err.message : 'Failed to save interview markers'
@@ -433,7 +444,8 @@ export default function ResumeTemplate() {
       .then((id) => {
         setHistoryRecordId(id);
         historyRecordIdRef.current = id;
-        setHistoryRefreshKey((n) => n + 1);
+        skipNextExternalLoadRef.current = true;
+        onHistorySaved?.(id);
       })
       .catch(() => {
         // Keep local sync even if history save fails.
@@ -532,11 +544,29 @@ export default function ResumeTemplate() {
       if (isResumeLanguageCode(data.item.language)) {
         setLanguage(data.item.language);
       }
-      setHistoryOpen(false);
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to load record');
     }
   };
+
+  useEffect(() => {
+    if (!activeHistoryId) return;
+    if (skipNextExternalLoadRef.current) {
+      skipNextExternalLoadRef.current = false;
+      return;
+    }
+    if (activeHistoryId === historyRecordIdRef.current) return;
+    void handleSelectHistory(activeHistoryId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load when middle panel selection changes
+  }, [activeHistoryId]);
+
+  useEffect(() => {
+    if (resetKey === 0) return;
+    handleResetSample();
+    skipNextExternalLoadRef.current = true;
+    onHistorySaved?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
 
   return (
     <div className="space-y-6">
@@ -567,13 +597,6 @@ export default function ResumeTemplate() {
                 ))}
               </select>
             </label>
-            <button
-              type="button"
-              onClick={() => setHistoryOpen(true)}
-              className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition"
-            >
-              History
-            </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -728,13 +751,6 @@ export default function ResumeTemplate() {
           setActiveMarker(marker);
           setInterviewDrawerOpen(true);
         }}
-      />
-
-      <HistoryDrawer
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        onSelect={handleSelectHistory}
-        refreshKey={historyRefreshKey}
       />
 
       <InterviewQuestionDrawer

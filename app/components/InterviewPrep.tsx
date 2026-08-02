@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
-import PrepHistoryDrawer from '@/app/components/PrepHistoryDrawer';
 import { getDeviceId } from '@/lib/device-id';
 import type { InterviewPrepHistoryRecord } from '@/lib/interview-prep-history';
 import {
@@ -108,7 +107,17 @@ async function updatePrepHistory(
   }
 }
 
-export default function InterviewPrep() {
+type Props = {
+  activeHistoryId?: string | null;
+  resetKey?: number;
+  onHistorySaved?: (id: string | null) => void;
+};
+
+export default function InterviewPrep({
+  activeHistoryId = null,
+  resetKey = 0,
+  onHistorySaved,
+}: Props) {
   const [mode, setMode] = useState<PrepMode>('questions');
   const [jdText, setJdText] = useState('');
   const [historyItems, setHistoryItems] = useState<ResumeHistoryListItem[]>([]);
@@ -118,9 +127,8 @@ export default function InterviewPrep() {
   const [selectedResume, setSelectedResume] = useState<ResumeTemplate | null>(null);
   const [selectedResumeLabel, setSelectedResumeLabel] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
-  const [prepHistoryOpen, setPrepHistoryOpen] = useState(false);
-  const [prepHistoryRefreshKey, setPrepHistoryRefreshKey] = useState(0);
   const [prepSessionId, setPrepSessionId] = useState<string | null>(null);
+  const skipNextExternalLoadRef = useRef(false);
   const prepSessionIdRef = useRef<string | null>(null);
   const jdTextRef = useRef('');
   const resumeMetaRef = useRef({ historyId: '', label: '' });
@@ -160,6 +168,7 @@ export default function InterviewPrep() {
               jobSummary: result.jobSummary,
               questions: result.questions,
             });
+            onHistorySaved?.(currentId);
           } else {
             const id = await createPrepHistory({
               jdText: currentJd,
@@ -168,8 +177,9 @@ export default function InterviewPrep() {
             });
             setPrepSessionId(id);
             prepSessionIdRef.current = id;
+            skipNextExternalLoadRef.current = true;
+            onHistorySaved?.(id);
           }
-          setPrepHistoryRefreshKey((n) => n + 1);
         } catch (err) {
           setLocalError(
             err instanceof Error ? err.message : 'Failed to save questions history'
@@ -207,6 +217,7 @@ export default function InterviewPrep() {
               resumeHistoryId: historyId || null,
               resumeLabel: label,
             });
+            onHistorySaved?.(currentId);
           } else {
             const id = await createPrepHistory({
               jdText: currentJd,
@@ -218,8 +229,9 @@ export default function InterviewPrep() {
             });
             setPrepSessionId(id);
             prepSessionIdRef.current = id;
+            skipNextExternalLoadRef.current = true;
+            onHistorySaved?.(id);
           }
-          setPrepHistoryRefreshKey((n) => n + 1);
         } catch (err) {
           setLocalError(
             err instanceof Error ? err.message : 'Failed to save match history'
@@ -375,11 +387,41 @@ export default function InterviewPrep() {
       }
 
       setMode(item.match_json ? 'match' : 'questions');
-      setPrepHistoryOpen(false);
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to load prep history');
     }
   };
+
+  useEffect(() => {
+    if (!activeHistoryId) return;
+    if (skipNextExternalLoadRef.current) {
+      skipNextExternalLoadRef.current = false;
+      return;
+    }
+    if (activeHistoryId === prepSessionIdRef.current) return;
+    void handleSelectPrepHistory(activeHistoryId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeHistoryId]);
+
+  useEffect(() => {
+    if (resetKey === 0) return;
+    clearQuestions();
+    clearMatchStream();
+    setJdText('');
+    setSavedPrep(null);
+    setSavedMatch(null);
+    savedPrepRef.current = null;
+    setPrepSessionId(null);
+    prepSessionIdRef.current = null;
+    setSelectedHistoryId('');
+    setSelectedResume(null);
+    setSelectedResumeLabel('');
+    setLocalError(null);
+    setMode('questions');
+    skipNextExternalLoadRef.current = true;
+    onHistorySaved?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
 
   const busy = isLoading || matchLoading;
   const livePrep =
@@ -404,25 +446,15 @@ export default function InterviewPrep() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <section className="space-y-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
             Job Description
           </h2>
           <p className="text-sm text-slate-600 mt-1">
-            粘贴目标岗位 JD，再选择下方功能。生成结果会自动存入 Prep History。
+            粘贴目标岗位 JD，再选择下方功能。生成结果会自动存入左侧 Prep History。
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setPrepHistoryOpen(true)}
-          className="px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
-        >
-          Prep History
-        </button>
-      </div>
-
-      <section className="space-y-3">
         <textarea
           className="w-full h-40 md:h-48 p-4 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 focus:outline-none transition resize-y"
           placeholder="Paste the Job Description (JD) here..."
@@ -752,12 +784,6 @@ export default function InterviewPrep() {
         </section>
       )}
 
-      <PrepHistoryDrawer
-        open={prepHistoryOpen}
-        onClose={() => setPrepHistoryOpen(false)}
-        onSelect={handleSelectPrepHistory}
-        refreshKey={prepHistoryRefreshKey}
-      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ function ProductMock() {
         <span className="h-2.5 w-2.5 rounded-full bg-[#c9d5e0]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#c9d5e0]" />
         <span className="ml-3 text-[11px] font-medium tracking-wide text-[#5a6d7e]">
-          workspace · resume · prep
+          workspace · resume · prep · drill
         </span>
       </div>
       <div className="grid grid-cols-[56px_1fr] sm:grid-cols-[56px_140px_1fr]">
@@ -30,6 +30,10 @@ function ProductMock() {
           <div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl text-[9px] font-semibold text-[#6b7c8c]">
             <span className="text-xs font-bold">Q</span>
             <span className="opacity-70">Prep</span>
+          </div>
+          <div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl text-[9px] font-semibold text-[#6b7c8c]">
+            <span className="text-xs font-bold">LC</span>
+            <span className="opacity-70">Drill</span>
           </div>
         </div>
         <div className="hidden border-r border-[#d5e0ea] bg-[#f7fafc] p-3 sm:block">
@@ -103,6 +107,12 @@ export default function HomeLanding() {
       body: t.homeFeatureCoverBody,
       href: '/pages?tab=interview',
     },
+    {
+      n: '05',
+      title: t.homeFeaturePracticeTitle,
+      body: t.homeFeaturePracticeBody,
+      href: '/pages?tab=practice',
+    },
   ] as const;
 
   const steps = [
@@ -164,7 +174,7 @@ export default function HomeLanding() {
             <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-[#3d5163] sm:text-lg">
               {t.homeSub}
             </p>
-            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:flex-wrap">
               <Link
                 href="/pages?tab=resume"
                 className="home-cta-primary rounded-xl bg-[#0f766e] px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-[#0d6560]"
@@ -176,6 +186,12 @@ export default function HomeLanding() {
                 className="rounded-xl border border-[#0f2744]/20 bg-white/70 px-6 py-3.5 text-center text-sm font-semibold text-[#0f2744] backdrop-blur transition hover:border-[#0f2744]/40 hover:bg-white"
               >
                 {t.homeCtaPrep}
+              </Link>
+              <Link
+                href="/pages?tab=practice"
+                className="rounded-xl border border-[#0f2744]/20 bg-white/70 px-6 py-3.5 text-center text-sm font-semibold text-[#0f2744] backdrop-blur transition hover:border-[#0f2744]/40 hover:bg-white"
+              >
+                {t.homeCtaPractice}
               </Link>
             </div>
           </div>

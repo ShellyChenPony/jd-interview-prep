@@ -4,17 +4,24 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import InterviewPrep from '@/app/components/InterviewPrep';
+import PracticeBoard from '@/app/components/PracticeBoard';
+import PracticeSidePanel from '@/app/components/PracticeSidePanel';
 import PrepHistoryPanel from '@/app/components/PrepHistoryPanel';
 import ResumeHistoryPanel from '@/app/components/ResumeHistoryPanel';
 import ResumeTemplate from '@/app/components/ResumeTemplate';
 import { AppLanguageProvider, useAppLanguage } from '@/lib/app-language';
 import { AppThemeProvider, useAppTheme, type AppTheme } from '@/lib/app-theme';
+import type { JobCategoryId } from '@/lib/leetcode-catalog';
 import { RESUME_LANGUAGES, type ResumeLanguageCode } from '@/lib/resume-languages';
 
-type TabId = 'resume' | 'interview';
+type TabId = 'resume' | 'interview' | 'practice';
 
 function tabFromSearch(value: string | null): TabId {
-  return value === 'interview' || value === 'prep' ? 'interview' : 'resume';
+  if (value === 'interview' || value === 'prep') return 'interview';
+  if (value === 'practice' || value === 'drill' || value === 'leetcode') {
+    return 'practice';
+  }
+  return 'resume';
 }
 
 function HeaderControls() {
@@ -55,7 +62,13 @@ function HeaderControls() {
   );
 }
 
-function HomeShell() {
+function navLabel(tab: TabId, t: ReturnType<typeof useAppLanguage>['t']): string {
+  if (tab === 'resume') return t.resumeNav;
+  if (tab === 'interview') return t.prepNav;
+  return t.practiceNav;
+}
+
+function WorkspaceShell() {
   const { t } = useAppLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -76,6 +89,12 @@ function HomeShell() {
   const [prepHistoryRefreshKey, setPrepHistoryRefreshKey] = useState(0);
   const [prepResetKey, setPrepResetKey] = useState(0);
 
+  const [practiceCategoryId, setPracticeCategoryId] =
+    useState<JobCategoryId>('frontend');
+  const [practiceHistoryId, setPracticeHistoryId] = useState<string | null>(null);
+  const [practiceHistoryRefreshKey, setPracticeHistoryRefreshKey] = useState(0);
+  const [practiceResetKey, setPracticeResetKey] = useState(0);
+
   const selectTab = (tab: TabId) => {
     setActiveTab(tab);
     setMobileHistoryOpen(false);
@@ -85,7 +104,21 @@ function HomeShell() {
   const navItems: { id: TabId; label: string; short: string }[] = [
     { id: 'resume', label: t.resumeTitle, short: 'CV' },
     { id: 'interview', label: t.prepTitle, short: 'Q' },
+    { id: 'practice', label: t.practiceTitle, short: 'LC' },
   ];
+
+  const title =
+    activeTab === 'resume'
+      ? t.resumeTitle
+      : activeTab === 'interview'
+        ? t.prepTitle
+        : t.practiceTitle;
+  const subtitle =
+    activeTab === 'resume'
+      ? t.resumeSubtitle
+      : activeTab === 'interview'
+        ? t.prepSubtitle
+        : t.practiceSubtitle;
 
   return (
     <div className="h-dvh overflow-hidden bg-[var(--shell-bg)] text-[var(--foreground)] print:h-auto print:overflow-visible print:bg-white">
@@ -120,7 +153,7 @@ function HomeShell() {
               >
                 <span className="text-sm font-bold tracking-tight">{item.short}</span>
                 <span className="mt-0.5 max-w-[52px] truncate opacity-80">
-                  {item.id === 'resume' ? t.resumeNav : t.prepNav}
+                  {navLabel(item.id, t)}
                 </span>
               </button>
             );
@@ -157,7 +190,7 @@ function HomeShell() {
                 setMobileHistoryOpen(false);
               }}
             />
-          ) : (
+          ) : activeTab === 'interview' ? (
             <PrepHistoryPanel
               selectedId={prepHistoryId}
               refreshKey={prepHistoryRefreshKey}
@@ -168,6 +201,26 @@ function HomeShell() {
               onNew={() => {
                 setPrepHistoryId(null);
                 setPrepResetKey((n) => n + 1);
+                setMobileHistoryOpen(false);
+              }}
+            />
+          ) : (
+            <PracticeSidePanel
+              selectedCategoryId={practiceCategoryId}
+              selectedHistoryId={practiceHistoryId}
+              refreshKey={practiceHistoryRefreshKey}
+              onSelectCategory={(id) => {
+                setPracticeCategoryId(id);
+                setPracticeHistoryId(null);
+                setMobileHistoryOpen(false);
+              }}
+              onSelectHistory={(id) => {
+                setPracticeHistoryId(id);
+                setMobileHistoryOpen(false);
+              }}
+              onNew={() => {
+                setPracticeHistoryId(null);
+                setPracticeResetKey((n) => n + 1);
                 setMobileHistoryOpen(false);
               }}
             />
@@ -182,11 +235,9 @@ function HomeShell() {
                   {t.brand}
                 </p>
                 <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-                  {activeTab === 'resume' ? t.resumeTitle : t.prepTitle}
+                  {title}
                 </h1>
-                <p className="mt-1 text-sm text-[var(--shell-muted)]">
-                  {activeTab === 'resume' ? t.resumeSubtitle : t.prepSubtitle}
-                </p>
+                <p className="mt-1 text-sm text-[var(--shell-muted)]">{subtitle}</p>
               </div>
               <HeaderControls />
             </header>
@@ -200,13 +251,27 @@ function HomeShell() {
                   setResumeHistoryRefreshKey((n) => n + 1);
                 }}
               />
-            ) : (
+            ) : activeTab === 'interview' ? (
               <InterviewPrep
                 activeHistoryId={prepHistoryId}
                 resetKey={prepResetKey}
                 onHistorySaved={(id) => {
                   setPrepHistoryId(id);
                   setPrepHistoryRefreshKey((n) => n + 1);
+                }}
+              />
+            ) : (
+              <PracticeBoard
+                selectedCategoryId={practiceCategoryId}
+                activeHistoryId={practiceHistoryId}
+                resetKey={practiceResetKey}
+                onCategoryChange={(id) => {
+                  setPracticeCategoryId(id);
+                  setPracticeHistoryId(null);
+                }}
+                onHistorySaved={(id) => {
+                  setPracticeHistoryId(id);
+                  setPracticeHistoryRefreshKey((n) => n + 1);
                 }}
               />
             )}
@@ -228,7 +293,7 @@ export default function WorkspacePage() {
             </div>
           }
         >
-          <HomeShell />
+          <WorkspaceShell />
         </Suspense>
       </AppLanguageProvider>
     </AppThemeProvider>

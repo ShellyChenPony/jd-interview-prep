@@ -4,21 +4,41 @@ export type UiCopy = {
   brand: string;
   resumeNav: string;
   prepNav: string;
+  practiceNav: string;
   list: string;
   resumeTitle: string;
   resumeSubtitle: string;
   prepTitle: string;
   prepSubtitle: string;
+  practiceTitle: string;
+  practiceSubtitle: string;
   resumeHistory: string;
   resumeHistoryHint: string;
   prepHistory: string;
   prepHistoryHint: string;
+  practiceSideTitle: string;
+  practiceSideHint: string;
+  practiceCategories: string;
+  practiceHistory: string;
   new: string;
   loading: string;
   delete: string;
   deleting: string;
   noResumeHistory: string;
   noPrepHistory: string;
+  noPracticeHistory: string;
+  practiceBrowseTab: string;
+  practiceBrowseHint: string;
+  practiceRecommendTab: string;
+  practiceRecommendHint: string;
+  practiceRecommendTitle: string;
+  practiceRecommendHelp: string;
+  practiceRecommendCta: string;
+  practiceRecommending: string;
+  practiceRecommendWait: string;
+  practicePrimaryCategory: string;
+  practiceProblems: string;
+  practiceOpen: string;
   language: string;
   theme: string;
   themeLight: string;
@@ -101,6 +121,9 @@ export type UiCopy = {
   homeFeatureMatchBody: string;
   homeFeatureCoverTitle: string;
   homeFeatureCoverBody: string;
+  homeFeaturePracticeTitle: string;
+  homeFeaturePracticeBody: string;
+  homeCtaPractice: string;
   homeStepsTitle: string;
   homeStep1Title: string;
   homeStep1Body: string;
@@ -116,22 +139,44 @@ const EN: UiCopy = {
   brand: 'AI Remote Job Prep',
   resumeNav: 'Resume',
   prepNav: 'Prep',
+  practiceNav: 'Drill',
   list: 'List',
   resumeTitle: 'Resume Template',
   resumeSubtitle: 'Upload or paste a resume, format with AI, then export.',
   prepTitle: 'Interview Prep',
   prepSubtitle:
     'Paste a JD, generate practice questions, analyze fit, or draft an NZ cover letter.',
+  practiceTitle: 'LeetCode Practice',
+  practiceSubtitle:
+    'Browse problems by role, or paste a JD to get a tailored practice list.',
   resumeHistory: 'Resume History',
   resumeHistoryHint: 'Saved formatted resumes',
   prepHistory: 'Prep History',
   prepHistoryHint: 'JD, questions, fit & cover letters',
+  practiceSideTitle: 'Practice',
+  practiceSideHint: 'Roles & JD recommendations',
+  practiceCategories: 'Job roles',
+  practiceHistory: 'JD recommendations',
   new: 'New',
   loading: 'Loading…',
   delete: 'Delete',
   deleting: 'Deleting…',
   noResumeHistory: 'No saved resumes yet. Upload and format one on the right.',
   noPrepHistory: 'No prep sessions yet. Paste a JD and generate on the right.',
+  noPracticeHistory: 'No JD recommendations yet. Paste a JD on the right.',
+  practiceBrowseTab: 'By role',
+  practiceBrowseHint: 'LeetCode sets per job type',
+  practiceRecommendTab: 'From JD',
+  practiceRecommendHint: 'AI picks what to drill',
+  practiceRecommendTitle: 'Recommend problems from JD',
+  practiceRecommendHelp:
+    'Paste the target JD. We map it to a role track and suggest LeetCode problems from our catalog.',
+  practiceRecommendCta: 'Recommend problems',
+  practiceRecommending: 'Recommending…',
+  practiceRecommendWait: 'Reading the JD and ranking practice problems…',
+  practicePrimaryCategory: 'Primary track',
+  practiceProblems: 'problems',
+  practiceOpen: 'Open',
   language: 'Language',
   theme: 'Theme',
   themeLight: 'Light',
@@ -207,12 +252,12 @@ const EN: UiCopy = {
   homeHeadline: 'Remote job prep,',
   homeHeadlineAccent: 'made clear',
   homeSub:
-    'Format your resume, practice from a real JD, check fit, and draft a New Zealand cover letter — in one place.',
+    'Format your resume, practice from a real JD, drill LeetCode by role, and draft a New Zealand cover letter — in one place.',
   homeCtaResume: 'Format my resume',
   homeCtaPrep: 'Prep from a JD',
   homeOpenApp: 'Open workspace',
   homeFeaturesTitle: 'What you can do here',
-  homeFeaturesSub: 'Four tools. One calm workflow from resume to interview.',
+  homeFeaturesSub: 'Five tools. One calm workflow from resume to interview.',
   homeFeatureResumeTitle: 'Resume template',
   homeFeatureResumeBody:
     'Upload or paste, let AI structure it, then export PDF. Small edits sync without another AI call.',
@@ -225,13 +270,17 @@ const EN: UiCopy = {
   homeFeatureCoverTitle: 'NZ cover letter',
   homeFeatureCoverBody:
     'Generate a recommendation / cover letter tailored to the JD — standard for New Zealand applications.',
+  homeFeaturePracticeTitle: 'LeetCode by role',
+  homeFeaturePracticeBody:
+    'Browse curated problems by job track, or let AI recommend what to drill from your JD.',
+  homeCtaPractice: 'Start drilling',
   homeStepsTitle: 'How to start',
   homeStep1Title: 'Polish the resume',
   homeStep1Body: 'Open Resume, format once with AI, save to history.',
   homeStep2Title: 'Paste the target JD',
   homeStep2Body: 'Switch to Prep and drop in the job description.',
   homeStep3Title: 'Practice, match, write',
-  homeStep3Body: 'Generate questions, analyze fit, then draft the cover letter.',
+  homeStep3Body: 'Drill LeetCode, generate questions, analyze fit, then draft the letter.',
   homeFooterCta: 'Enter the workspace',
   homeFooterNote: 'Your history stays on this device. Language and theme follow you into the app.',
 };
@@ -240,21 +289,42 @@ const ZH_CN: UiCopy = {
   brand: 'AI 远程面试准备',
   resumeNav: '简历',
   prepNav: '面试',
+  practiceNav: '刷题',
   list: '列表',
   resumeTitle: '简历模板',
   resumeSubtitle: '上传或粘贴简历，用 AI 排版后导出。',
   prepTitle: '面试准备',
   prepSubtitle: '粘贴 JD，生成练习题、匹配分析，或按新西兰习惯写推荐信。',
+  practiceTitle: 'LeetCode 刷题',
+  practiceSubtitle: '按岗位分类浏览题目，或粘贴 JD 获取针对性练习清单。',
   resumeHistory: '简历历史',
   resumeHistoryHint: '已保存的排版简历',
   prepHistory: '面试历史',
   prepHistoryHint: 'JD、题目、匹配与推荐信',
+  practiceSideTitle: '刷题',
+  practiceSideHint: '岗位分类与 JD 推荐',
+  practiceCategories: '岗位分类',
+  practiceHistory: 'JD 推荐记录',
   new: '新建',
   loading: '加载中…',
   delete: '删除',
   deleting: '删除中…',
   noResumeHistory: '还没有保存的简历。请在右侧上传并排版。',
   noPrepHistory: '还没有面试记录。请在右侧粘贴 JD 并生成。',
+  noPracticeHistory: '还没有 JD 推荐。请在右侧粘贴 JD 生成。',
+  practiceBrowseTab: '按岗位',
+  practiceBrowseHint: '各岗位 LeetCode 题单',
+  practiceRecommendTab: '按 JD',
+  practiceRecommendHint: 'AI 推荐该练哪些题',
+  practiceRecommendTitle: '根据 JD 推荐刷题',
+  practiceRecommendHelp:
+    '粘贴目标岗位 JD。我们会映射到岗位赛道，并从题库中推荐应练的 LeetCode。',
+  practiceRecommendCta: '推荐题目',
+  practiceRecommending: '推荐中…',
+  practiceRecommendWait: '正在阅读 JD 并排序练习题…',
+  practicePrimaryCategory: '主赛道',
+  practiceProblems: '题',
+  practiceOpen: '打开',
   language: '语言',
   theme: '主题',
   themeLight: '浅色',
@@ -327,12 +397,12 @@ const ZH_CN: UiCopy = {
   homeHeadline: '远程求职准备，',
   homeHeadlineAccent: '一目了然',
   homeSub:
-    '排版简历、按 JD 刷题、匹配分析、生成新西兰推荐信——一个工作区走完。',
+    '排版简历、按 JD 刷题/面试题、匹配分析、生成新西兰推荐信——一个工作区走完。',
   homeCtaResume: '开始排版简历',
   homeCtaPrep: '从 JD 开始准备',
   homeOpenApp: '进入工作区',
   homeFeaturesTitle: '本站能做什么',
-  homeFeaturesSub: '四个工具，一条从简历到面试的清晰路径。',
+  homeFeaturesSub: '五个工具，一条从简历到面试的清晰路径。',
   homeFeatureResumeTitle: '简历模板',
   homeFeatureResumeBody:
     '上传或粘贴后用 AI 结构化排版，可导出 PDF；小改动可同步，无需再次调用 AI。',
@@ -342,13 +412,17 @@ const ZH_CN: UiCopy = {
   homeFeatureMatchBody: '查看匹配分、优势、缺口，以及应聘前的具体提升计划。',
   homeFeatureCoverTitle: '新西兰推荐信',
   homeFeatureCoverBody: '按 JD + 简历生成 Cover Letter——新西兰投递岗位时常用。',
+  homeFeaturePracticeTitle: '按岗位刷 LeetCode',
+  homeFeaturePracticeBody:
+    '按岗位赛道浏览精选题，或让 AI 根据 JD 推荐该练的题目。',
+  homeCtaPractice: '开始刷题',
   homeStepsTitle: '怎么开始',
   homeStep1Title: '先排好简历',
   homeStep1Body: '进入简历页，用 AI 排版一次并保存到历史。',
   homeStep2Title: '粘贴目标 JD',
   homeStep2Body: '切换到面试准备，贴上职位描述。',
   homeStep3Title: '刷题 · 匹配 · 写信',
-  homeStep3Body: '生成题目、分析匹配度，再写推荐信。',
+  homeStep3Body: '刷 LeetCode、生成面试题、分析匹配度，再写推荐信。',
   homeFooterCta: '进入工作区',
   homeFooterNote: '历史保存在本设备。语言与主题设置会带入工作区。',
 };

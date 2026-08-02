@@ -8,7 +8,8 @@ import ResumePreview from '@/app/components/ResumePreview';
 import ResumeThemePicker from '@/app/components/ResumeThemePicker';
 import { aiFetch, aiRequestHeaders } from '@/lib/ai-request-headers';
 import {
-  normalizeLayout,
+  normalizePdfLayoutProfile,
+  resolveLayoutId,
   toBrief,
   upsertCustomTemplate,
   type CustomResumeTemplate,
@@ -311,12 +312,23 @@ export default function ResumeTemplate({
   }, [customTemplate]);
 
   const applyTemplateVisuals = (tpl: CustomResumeTemplate) => {
+    const profile = normalizePdfLayoutProfile(tpl.layoutProfile);
     const preset = getColorPreset(tpl.colorPresetId);
-    setLayout(normalizeLayout(tpl.layout));
+    setLayout(resolveLayoutId(tpl.layout, profile));
     setColorPresetId(tpl.colorPresetId || DEFAULT_COLOR_PRESET_ID);
-    setBackground(tpl.background?.trim() || preset.background);
-    setAccent(tpl.accent?.trim() || preset.accent);
+    setBackground(
+      tpl.background?.trim() ||
+        profile?.backgroundHint ||
+        preset.background
+    );
+    setAccent(
+      tpl.accent?.trim() || profile?.accentHint || preset.accent
+    );
   };
+
+  const activeLayoutProfile = customTemplate
+    ? normalizePdfLayoutProfile(customTemplate.layoutProfile)
+    : null;
 
   const handleLayoutChange = (next: ResumeLayoutId) => {
     setLayout(next);
@@ -543,6 +555,7 @@ export default function ResumeTemplate({
         language,
         personName: full.name,
         previewElement: document.getElementById('resume-print'),
+        layoutProfile: activeLayoutProfile,
         theme: buildResumeTheme({
           layout,
           presetId: colorPresetId,
@@ -820,6 +833,7 @@ export default function ResumeTemplate({
         colorPresetId={colorPresetId}
         background={background}
         accent={accent}
+        layoutProfile={activeLayoutProfile}
         markers={liveMarkers}
         onMarkerClick={(marker) => {
           setActiveMarker(marker);

@@ -29,15 +29,26 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: getChatModel(),
-    temperature: 0.3,
+    temperature: 0.2,
     output: Output.object({ schema: AnalyzedPdfTemplateSchema }),
-    prompt: `You analyze a resume TEMPLATE PDF (text extracted). This is a layout/style reference, not the candidate's own resume.
+    prompt: `You analyze a resume TEMPLATE PDF (text extracted). Infer a visual layout profile so our HTML renderer can approximate the PDF.
 
-Return raw JSON only (no markdown fences).
+This is a layout/style reference, not the candidate's own resume.
+Return raw JSON only (no markdown code fences).
 Write name and styleNotes in ${language.promptName}.
-layout must be one of: classic, sidebar, banner, timeline.
-name: short label for saving this template (can include hints from filename "${filename}").
-styleNotes: how sections are ordered, how dense bullets are, overall tone.
+
+Rules for layoutProfile:
+- columns: use sidebar-left/sidebar-right if contact/skills clearly sit in a side column; else single.
+- headerStyle: banner if a solid colored header band is likely; centered if name is centered; split if name left / contact right; else plain.
+- sidebarSections: ordered blocks that belong in the side column (contact, skills, summary, education). Empty if single column.
+- mainSectionOrder: ordered main-column sections among summary, skills, experience, education, projects. Put experience before education unless the template clearly reverses that.
+- sectionTitleStyle: accent-bar for left rail titles; underline for bottom-border titles; plain-caps otherwise.
+- density: compact for dense bullet-heavy resumes; spacious for airy ones; else comfortable.
+- contactPlacement / skillsPlacement must be consistent with columns and sidebarSections.
+- accentHint / backgroundHint: only set #RRGGBB when the text strongly suggests a brand color; otherwise omit or empty string.
+- layout (legacy): classic | sidebar | banner | timeline — closest of the four.
+
+Filename hint: "${filename}"
 
 Template text:
 ---

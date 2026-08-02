@@ -1,5 +1,14 @@
 import { z } from 'zod';
 import {
+  DEFAULT_PDF_LAYOUT_PROFILE,
+  normalizePdfLayoutProfile,
+  PdfLayoutProfileSchema,
+  profileToLayoutId,
+  profileToPromptHint,
+  resolveLayoutId,
+  type PdfLayoutProfile,
+} from '@/lib/pdf-layout-profile';
+import {
   DEFAULT_COLOR_PRESET_ID,
   DEFAULT_RESUME_LAYOUT,
   isResumeLayoutId,
@@ -26,6 +35,8 @@ export const CustomResumeTemplateSchema = z.object({
   accent: z.string().optional(),
   /** AI notes from analyze-resume-template (section order, density, tone). */
   styleNotes: z.string().optional(),
+  /** Rich visual layout for the flexible renderer. */
+  layoutProfile: PdfLayoutProfileSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -39,21 +50,25 @@ export const CustomTemplateBriefSchema = z.object({
   templateText: z.string(),
   layout: z.string(),
   styleNotes: z.string().optional(),
+  layoutProfile: PdfLayoutProfileSchema.optional(),
 });
 
 export type CustomTemplateBrief = z.infer<typeof CustomTemplateBriefSchema>;
 
-/** Optional AI analysis after PDF upload. */
+/** AI analysis after PDF upload (includes rich layout profile). */
 export const AnalyzedPdfTemplateSchema = z.object({
   name: z.string().describe('Short name for this template based on the PDF'),
   layout: z
     .string()
-    .describe('Best matching visual layout: classic, sidebar, banner, or timeline'),
+    .describe('Best matching legacy layout: classic, sidebar, banner, or timeline'),
   styleNotes: z
     .string()
     .describe(
       '2-4 sentences on section order, density, and tone observed in the PDF template'
     ),
+  layoutProfile: PdfLayoutProfileSchema.describe(
+    'Structured visual layout to approximate the PDF in our HTML renderer'
+  ),
 });
 
 export type AnalyzedPdfTemplate = z.infer<typeof AnalyzedPdfTemplateSchema>;
@@ -71,16 +86,25 @@ export function createPdfCustomTemplate(input: {
   layout?: string;
   colorPresetId?: string;
   styleNotes?: string;
+  layoutProfile?: PdfLayoutProfile | null;
 }): CustomResumeTemplate {
   const now = new Date().toISOString();
+  const profile =
+    normalizePdfLayoutProfile(input.layoutProfile) ?? undefined;
+  const layout = profile
+    ? resolveLayoutId(input.layout, profile)
+    : normalizeLayout(input.layout);
   return {
     id: crypto.randomUUID(),
     name: input.name.trim() || input.sourceFilename || 'PDF template',
     sourceFilename: input.sourceFilename,
     templateText: truncateTemplateText(input.templateText),
-    layout: normalizeLayout(input.layout),
+    layout,
     colorPresetId: input.colorPresetId || DEFAULT_COLOR_PRESET_ID,
     styleNotes: input.styleNotes?.trim() || undefined,
+    layoutProfile: profile,
+    accent: profile?.accentHint,
+    background: profile?.backgroundHint,
     createdAt: now,
     updatedAt: now,
   };
@@ -91,12 +115,14 @@ export function normalizeLayout(value: string | undefined): ResumeLayoutId {
 }
 
 export function toBrief(t: CustomResumeTemplate): CustomTemplateBrief {
+  const profile = normalizePdfLayoutProfile(t.layoutProfile) ?? undefined;
   return {
     name: t.name,
     sourceFilename: t.sourceFilename,
     templateText: truncateTemplateText(t.templateText),
-    layout: normalizeLayout(t.layout),
+    layout: resolveLayoutId(t.layout, profile),
     styleNotes: t.styleNotes?.trim() || undefined,
+    layoutProfile: profile,
   };
 }
 
@@ -106,7 +132,22 @@ export function listCustomTemplates(): CustomResumeTemplate[] {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = z.array(CustomResumeTemplateSchema).safeParse(JSON.parse(raw));
-    if (!parsed.success) return [];
+    if (!parsed.success) {
+      // Soft-recover older rows missing layoutProfile.
+      const loose = JSON.parse(raw) as unknown;
+      if (!Array.isArray(loose)) return [];
+      const recovered: CustomResumeTemplate[] = [];
+      for (const item of loose) {
+        const one = CustomResumeTemplateSchema.safeParse({
+          ...((item as object) ?? {}),
+          layoutProfile: normalizePdfLayoutProfile(
+            (item as { layoutProfile?: unknown })?.layoutProfile
+          ) ?? undefined,
+        });
+        if (one.success) recovered.push(one.data);
+      }
+      return recovered.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
     return parsed.data.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   } catch {
     return [];
@@ -127,11 +168,13 @@ export function upsertCustomTemplate(
 ): CustomResumeTemplate[] {
   const items = listCustomTemplates();
   const idx = items.findIndex((t) => t.id === template.id);
+  const profile = normalizePdfLayoutProfile(template.layoutProfile) ?? undefined;
   const next: CustomResumeTemplate = {
     ...template,
     templateText: truncateTemplateText(template.templateText),
-    layout: normalizeLayout(template.layout),
+    layout: resolveLayoutId(template.layout, profile),
     styleNotes: template.styleNotes?.trim() || undefined,
+    layoutProfile: profile,
     updatedAt: new Date().toISOString(),
   };
   if (idx >= 0) items[idx] = next;
@@ -170,6 +213,14 @@ export function setSelectedCustomTemplateId(id: string | null): void {
 
 export function briefToPromptBlock(brief: CustomTemplateBrief): string {
   const notes = brief.styleNotes?.trim();
+  const profile = normalizePdfLayoutProfile(brief.layoutProfile);
+  const profileHint = profile
+    ? profileToPromptHint(profile)
+    : `legacyLayout=${brief.layout}`;
+  const order =
+    profile?.mainSectionOrder.join(' → ') ||
+    DEFAULT_PDF_LAYOUT_PROFILE.mainSectionOrder.join(' → ');
+
   return `
 The user uploaded a PDF resume TEMPLATE. Use it as the PRIMARY structure / section-order / tone reference.
 Do NOT copy names, employers, schools, dates, or metrics from the template — those belong to someone else.
@@ -177,10 +228,38 @@ Fill the template pattern with the USER resume content below.
 
 Template name: ${brief.name || '(unnamed)'}
 Template file: ${brief.sourceFilename || '(unknown)'}
-Preferred visual layout hint (for our renderer): ${brief.layout}
+Visual layout engine hint: ${profileHint}
+Preferred section order for JSON fields: ${order}
 ${notes ? `\nStyle notes from template analysis:\n${notes}\n` : ''}
 --- BEGIN PDF TEMPLATE TEXT ---
 ${brief.templateText}
 --- END PDF TEMPLATE TEXT ---
 `.trim();
 }
+
+/** Apply analyzed profile colors onto template when hints exist. */
+export function mergeAnalyzedIntoTemplate(
+  existing: CustomResumeTemplate,
+  analyzed: AnalyzedPdfTemplate
+): CustomResumeTemplate {
+  const profile = normalizePdfLayoutProfile(analyzed.layoutProfile);
+  const layout = profile
+    ? resolveLayoutId(analyzed.layout, profile)
+    : normalizeLayout(analyzed.layout);
+  return {
+    ...existing,
+    name: analyzed.name.trim() || existing.name,
+    layout,
+    styleNotes: analyzed.styleNotes.trim() || existing.styleNotes,
+    layoutProfile: profile ?? existing.layoutProfile,
+    accent: profile?.accentHint || existing.accent,
+    background: profile?.backgroundHint || existing.background,
+  };
+}
+
+export {
+  profileToLayoutId,
+  normalizePdfLayoutProfile,
+  resolveLayoutId,
+};
+export type { PdfLayoutProfile };

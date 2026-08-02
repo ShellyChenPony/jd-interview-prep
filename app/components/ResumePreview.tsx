@@ -9,6 +9,8 @@ import {
   markersForTarget,
   type ResumeInterviewMarker,
 } from '@/lib/resume-interview';
+import ProfileResumePreview from '@/app/components/ProfileResumePreview';
+import type { PdfLayoutProfile } from '@/lib/pdf-layout-profile';
 import type { ResumeTemplate } from '@/lib/resume-template';
 import {
   buildResumeTheme,
@@ -25,6 +27,8 @@ type Props = {
   colorPresetId?: string;
   background?: string;
   accent?: string;
+  /** When set (PDF template engine), use flexible profile renderer. */
+  layoutProfile?: PdfLayoutProfile | null;
   markers?: ResumeInterviewMarker[];
   onMarkerClick?: (marker: ResumeInterviewMarker) => void;
 };
@@ -338,6 +342,7 @@ export default function ResumePreview({
   colorPresetId = DEFAULT_COLOR_PRESET_ID,
   background,
   accent,
+  layoutProfile,
   markers,
   onMarkerClick,
 }: Props) {
@@ -345,6 +350,20 @@ export default function ResumePreview({
 
   const labels = getSectionLabels(language);
   const theme = buildResumeTheme({ layout, presetId: colorPresetId, background, accent });
+
+  if (layoutProfile) {
+    return (
+      <ProfileResumePreview
+        resume={resume}
+        language={language}
+        theme={theme}
+        profile={layoutProfile}
+        markers={markers}
+        onMarkerClick={onMarkerClick}
+      />
+    );
+  }
+
   const contacts = contactItems(resume);
 
   const shellClass =

@@ -10,7 +10,9 @@ import {
   deleteCustomTemplate,
   getSelectedCustomTemplateId,
   listCustomTemplates,
+  mergeAnalyzedIntoTemplate,
   normalizeLayout,
+  normalizePdfLayoutProfile,
   setSelectedCustomTemplateId,
   upsertCustomTemplate,
   type CustomResumeTemplate,
@@ -89,12 +91,8 @@ export default function CustomResumeTemplatePanel({
       const existing = listCustomTemplates().find((x) => x.id === id);
       if (!existing) return;
 
-      const updated = upsertCustomTemplate({
-        ...existing,
-        name: parsed.data.name.trim() || existing.name,
-        layout: normalizeLayout(parsed.data.layout),
-        styleNotes: parsed.data.styleNotes.trim() || existing.styleNotes,
-      });
+      const merged = mergeAnalyzedIntoTemplate(existing, parsed.data);
+      const updated = upsertCustomTemplate(merged);
       setItems(updated);
       const current = updated.find((x) => x.id === id);
       // Always apply analysis result for the template we just enriched.
@@ -255,7 +253,9 @@ export default function CustomResumeTemplatePanel({
                   {tpl.sourceFilename}
                 </span>
                 <span className="block text-[11px] text-[var(--shell-subtle)] mt-0.5">
-                  {normalizeLayout(tpl.layout)} · PDF
+                  {normalizePdfLayoutProfile(tpl.layoutProfile)?.columns ??
+                    normalizeLayout(tpl.layout)}{' '}
+                  · PDF layout
                 </span>
               </button>
               <div className="mt-2 flex justify-end">
@@ -276,6 +276,11 @@ export default function CustomResumeTemplatePanel({
       {selectedId && (
         <p className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs text-violet-900 dark:text-violet-100">
           {t.customTplApplyHint}
+          {selected && !normalizePdfLayoutProfile(selected.layoutProfile) && (
+            <span className="mt-1 block opacity-90">
+              {analyzing ? t.customTplAnalyzing : t.customTplProfilePending}
+            </span>
+          )}
         </p>
       )}
 

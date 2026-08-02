@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import type { PdfLayoutProfile, SectionId } from '@/lib/pdf-layout-profile';
 import {
   DEFAULT_RESUME_LANGUAGE,
   getSectionLabels,
@@ -367,6 +368,348 @@ function buildPlainResumeNode(
   return root;
 }
 
+/** Hex-only DOM approximating PdfLayoutProfile for html2canvas export. */
+function buildProfilePlainResumeNode(
+  resume: ResumeTemplate,
+  labels: ResumeSectionLabels,
+  theme: ResumeTheme,
+  profile: PdfLayoutProfile
+): HTMLElement {
+  const root = el(
+    'div',
+    [
+      'box-sizing:border-box',
+      'width:794px',
+      `background:${theme.background}`,
+      `color:${theme.text}`,
+      'font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Segoe UI",sans-serif',
+      'line-height:1.55',
+      'text-align:left',
+      'overflow:hidden',
+    ].join(';')
+  );
+
+  const contactList = [
+    resume.contact.email,
+    resume.contact.phone,
+    resume.contact.location,
+    resume.contact.linkedin,
+    resume.contact.github,
+  ].filter(Boolean);
+  const contact = contactList.join(' · ');
+  const hasSidebar =
+    profile.columns === 'sidebar-left' || profile.columns === 'sidebar-right';
+  const pad =
+    profile.density === 'compact'
+      ? '20px 28px'
+      : profile.density === 'spacious'
+        ? '36px 48px'
+        : '28px 40px';
+  const nameSize =
+    profile.nameSize === 'xl' ? '32px' : profile.nameSize === 'md' ? '22px' : '28px';
+
+  const sectionTitle = (title: string) => {
+    if (profile.sectionTitleStyle === 'accent-bar') {
+      return el(
+        'div',
+        `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.accent};margin:16px 0 8px;padding-left:10px;border-left:3px solid ${theme.accent}`,
+        [title]
+      );
+    }
+    if (profile.sectionTitleStyle === 'plain-caps') {
+      return el(
+        'div',
+        `font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${theme.accent};margin:16px 0 8px`,
+        [title]
+      );
+    }
+    return el(
+      'div',
+      `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.muted};margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid ${theme.accent}55`,
+      [title]
+    );
+  };
+
+  const appendMainSections = (target: HTMLElement) => {
+    const showSkillsInMain =
+      profile.skillsPlacement === 'main' || profile.skillsPlacement === 'both';
+    for (const id of profile.mainSectionOrder as SectionId[]) {
+      if (id === 'summary') {
+        if (hasSidebar && profile.sidebarSections.includes('summary')) continue;
+        if (!resume.summary) continue;
+        target.append(sectionTitle(labels.summary));
+        target.append(
+          el('div', `font-size:13px;color:${theme.text};margin:0 0 8px`, [resume.summary])
+        );
+      } else if (id === 'skills') {
+        if (!showSkillsInMain || !resume.skills.length) continue;
+        target.append(sectionTitle(labels.skills));
+        for (const group of resume.skills) {
+          target.append(
+            el('div', `font-size:13px;color:${theme.text};margin:0 0 4px`, [
+              el('span', `font-weight:700;color:${theme.text}`, [`${group.category}: `]),
+              group.items.join(' · '),
+            ])
+          );
+        }
+      } else if (id === 'experience') {
+        if (!resume.experience.length) continue;
+        target.append(sectionTitle(labels.experience));
+        for (const job of resume.experience) {
+          const head = el('div', 'margin:0 0 10px');
+          head.append(
+            el('div', `font-size:13px;font-weight:700;color:${theme.text}`, [
+              `${job.role}${job.company ? ` — ${job.company}` : ''}`,
+            ])
+          );
+          if (job.period) {
+            head.append(
+              el('div', `font-size:12px;color:${theme.muted};margin:2px 0 4px`, [job.period])
+            );
+          }
+          for (const bullet of job.bullets) {
+            head.append(
+              el('div', `font-size:12.5px;color:${theme.text};margin:0 0 2px;padding-left:12px`, [
+                `• ${bullet}`,
+              ])
+            );
+          }
+          target.append(head);
+        }
+      } else if (id === 'education') {
+        if (hasSidebar && profile.sidebarSections.includes('education')) continue;
+        if (!resume.education.length) continue;
+        target.append(sectionTitle(labels.education));
+        for (const ed of resume.education) {
+          target.append(
+            el('div', `font-size:13px;color:${theme.text};margin:0 0 4px`, [
+              `${ed.degree}${ed.school ? ` — ${ed.school}` : ''}${
+                ed.period ? ` (${ed.period})` : ''
+              }`,
+            ])
+          );
+        }
+      } else if (id === 'projects') {
+        if (!resume.projects.length) continue;
+        target.append(sectionTitle(labels.projects));
+        for (const project of resume.projects) {
+          const block = el('div', 'margin:0 0 10px');
+          if (project.name) {
+            block.append(
+              el('div', `font-size:13px;font-weight:700;color:${theme.text}`, [project.name])
+            );
+          }
+          if (project.description) {
+            block.append(
+              el('div', `font-size:12.5px;color:${theme.text};margin:2px 0`, [
+                project.description,
+              ])
+            );
+          }
+          if (project.tech) {
+            block.append(
+              el('div', `font-size:11px;color:${theme.muted}`, [project.tech])
+            );
+          }
+          target.append(block);
+        }
+      }
+    }
+  };
+
+  if (hasSidebar) {
+    const sideW =
+      profile.sidebarWidth === 'narrow'
+        ? '180px'
+        : profile.sidebarWidth === 'wide'
+          ? '280px'
+          : '220px';
+    const sideBg =
+      profile.sidebarFill === 'accent'
+        ? theme.accent
+        : profile.sidebarFill === 'muted'
+          ? `${theme.accent}22`
+          : theme.background;
+    const sideColor = profile.sidebarFill === 'accent' ? '#ffffff' : theme.text;
+    const mutedSide =
+      profile.sidebarFill === 'accent' ? 'rgba(255,255,255,0.75)' : theme.muted;
+
+    const shell = el(
+      'div',
+      `display:grid;grid-template-columns:${
+        profile.columns === 'sidebar-right' ? `1fr ${sideW}` : `${sideW} 1fr`
+      };min-height:1000px`
+    );
+    const aside = el('div', `padding:${pad};background:${sideBg};color:${sideColor}`);
+    if (profile.sidebarFill === 'accent') {
+      aside.append(
+        el('div', `font-size:${nameSize};font-weight:700;margin:0 0 6px;color:#ffffff`, [
+          resume.name,
+        ])
+      );
+      if (resume.title) {
+        aside.append(
+          el('div', 'font-size:14px;font-weight:600;margin:0 0 16px;color:#ffffff', [
+            resume.title,
+          ])
+        );
+      }
+    }
+    for (const sec of profile.sidebarSections) {
+      if (sec === 'contact' && contactList.length) {
+        aside.append(
+          el('div', `font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${mutedSide};margin:0 0 6px`, [
+            'Contact',
+          ])
+        );
+        for (const item of contactList) {
+          aside.append(
+            el('div', `font-size:11px;color:${sideColor};margin:0 0 4px`, [item])
+          );
+        }
+      }
+      if (sec === 'skills' && resume.skills.length) {
+        aside.append(
+          el('div', `font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${mutedSide};margin:14px 0 6px`, [
+            labels.skills,
+          ])
+        );
+        for (const group of resume.skills) {
+          aside.append(
+            el('div', `font-size:11px;font-weight:700;color:${sideColor};margin:0 0 2px`, [
+              group.category,
+            ])
+          );
+          aside.append(
+            el('div', `font-size:11px;color:${mutedSide};margin:0 0 8px`, [
+              group.items.join(' · '),
+            ])
+          );
+        }
+      }
+      if (sec === 'summary' && resume.summary) {
+        aside.append(
+          el('div', `font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${mutedSide};margin:14px 0 6px`, [
+            labels.summary,
+          ])
+        );
+        aside.append(
+          el('div', `font-size:11px;color:${sideColor}`, [resume.summary])
+        );
+      }
+      if (sec === 'education' && resume.education.length) {
+        aside.append(
+          el('div', `font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${mutedSide};margin:14px 0 6px`, [
+            labels.education,
+          ])
+        );
+        for (const ed of resume.education) {
+          aside.append(
+            el('div', `font-size:11px;color:${sideColor};margin:0 0 6px`, [
+              `${ed.degree}${ed.school ? ` — ${ed.school}` : ''}`,
+            ])
+          );
+        }
+      }
+    }
+
+    const main = el('div', `background:${theme.background}`);
+    if (profile.headerStyle === 'banner') {
+      const header = el('div', `padding:${pad};background:${theme.accent};color:#ffffff`);
+      header.append(
+        el('div', `font-size:${nameSize};font-weight:700;margin:0 0 6px;color:#ffffff`, [
+          resume.name,
+        ])
+      );
+      if (resume.title) {
+        header.append(
+          el('div', 'font-size:15px;font-weight:600;color:#ffffff', [resume.title])
+        );
+      }
+      main.append(header);
+    } else if (profile.sidebarFill !== 'accent') {
+      const header = el(
+        'div',
+        `padding:${pad};padding-bottom:14px;border-bottom:1px solid ${theme.accent}55`
+      );
+      header.append(
+        el('div', `font-size:${nameSize};font-weight:700;color:${theme.text}`, [
+          resume.name,
+        ])
+      );
+      if (resume.title) {
+        header.append(
+          el('div', `font-size:15px;font-weight:600;margin:4px 0;color:${theme.accent}`, [
+            resume.title,
+          ])
+        );
+      }
+      if (
+        profile.contactPlacement !== 'sidebar' &&
+        !profile.sidebarSections.includes('contact') &&
+        contact
+      ) {
+        header.append(el('div', `font-size:12px;color:${theme.muted}`, [contact]));
+      }
+      main.append(header);
+    }
+    const body = el('div', `padding:${pad}`);
+    appendMainSections(body);
+    main.append(body);
+
+    if (profile.columns === 'sidebar-right') {
+      shell.append(main, aside);
+    } else {
+      shell.append(aside, main);
+    }
+    root.append(shell);
+    return root;
+  }
+
+  // Single column
+  if (profile.headerStyle === 'banner') {
+    const header = el('div', `padding:${pad};background:${theme.accent};color:#ffffff`);
+    header.append(
+      el('div', `font-size:${nameSize};font-weight:700;margin:0 0 6px;color:#ffffff`, [
+        resume.name,
+      ])
+    );
+    if (resume.title) {
+      header.append(
+        el('div', 'font-size:15px;font-weight:600;color:#ffffff', [resume.title])
+      );
+    }
+    if (contact) {
+      header.append(el('div', 'font-size:12px;color:#ffffff;opacity:0.92;margin-top:8px', [contact]));
+    }
+    root.append(header);
+  } else {
+    const align = profile.headerStyle === 'centered' ? 'center' : 'left';
+    const header = el(
+      'div',
+      `padding:${pad};padding-bottom:14px;text-align:${align};border-bottom:1px solid ${theme.accent}55`
+    );
+    header.append(
+      el('div', `font-size:${nameSize};font-weight:700;color:${theme.text}`, [resume.name])
+    );
+    if (resume.title) {
+      header.append(
+        el('div', `font-size:15px;font-weight:600;margin:4px 0;color:${theme.accent}`, [
+          resume.title,
+        ])
+      );
+    }
+    if (contact) {
+      header.append(el('div', `font-size:12px;color:${theme.muted}`, [contact]));
+    }
+    root.append(header);
+  }
+  const body = el('div', `padding:${pad}`);
+  appendMainSections(body);
+  root.append(body);
+  return root;
+}
+
 /**
  * CJK-safe export: build a hex-only offscreen resume (no page CSS),
  * then rasterize it. Avoids html2canvas failing on lab()/oklch().
@@ -375,7 +718,8 @@ export async function downloadResumePdfViaPreview(
   resumeInput: ResumeTemplate | Partial<ResumeTemplate>,
   language: ResumeLanguageCode,
   personName?: string,
-  theme: ResumeTheme = buildResumeTheme({})
+  theme: ResumeTheme = buildResumeTheme({}),
+  layoutProfile?: PdfLayoutProfile | null
 ): Promise<void> {
   const resume = coerceResumeForCjk(resumeInput);
   const labels = getSectionLabels(language);
@@ -393,7 +737,9 @@ export async function downloadResumePdfViaPreview(
     ].join(';')
   );
 
-  const node = buildPlainResumeNode(resume, labels, theme);
+  const node = layoutProfile
+    ? buildProfilePlainResumeNode(resume, labels, theme, layoutProfile)
+    : buildPlainResumeNode(resume, labels, theme);
   host.append(node);
   document.body.append(host);
 
@@ -648,12 +994,30 @@ export async function downloadResumePdf(options: {
   personName?: string;
   previewElement?: HTMLElement | null;
   theme?: ResumeTheme;
+  /** PDF template layout profile → HTML capture with profile DOM. */
+  layoutProfile?: PdfLayoutProfile | null;
 }): Promise<void> {
-  const { resume, language, personName, theme = buildResumeTheme({}) } = options;
+  const {
+    resume,
+    language,
+    personName,
+    theme = buildResumeTheme({}),
+    layoutProfile = null,
+  } = options;
 
-  // Use HTML capture for CJK fonts and for non-classic layouts (sidebar/banner/timeline).
-  if (languageNeedsCjkPdf(language) || theme.layout !== 'classic') {
-    await downloadResumePdfViaPreview(resume, language, personName, theme);
+  // Use HTML capture for CJK, non-classic layouts, or PDF layout-profile previews.
+  if (
+    layoutProfile ||
+    languageNeedsCjkPdf(language) ||
+    theme.layout !== 'classic'
+  ) {
+    await downloadResumePdfViaPreview(
+      resume,
+      language,
+      personName,
+      theme,
+      layoutProfile
+    );
     return;
   }
 

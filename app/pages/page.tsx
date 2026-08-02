@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import InterviewPrep from '@/app/components/InterviewPrep';
 import PrepHistoryPanel from '@/app/components/PrepHistoryPanel';
 import ResumeHistoryPanel from '@/app/components/ResumeHistoryPanel';
@@ -10,6 +12,10 @@ import { AppThemeProvider, useAppTheme, type AppTheme } from '@/lib/app-theme';
 import { RESUME_LANGUAGES, type ResumeLanguageCode } from '@/lib/resume-languages';
 
 type TabId = 'resume' | 'interview';
+
+function tabFromSearch(value: string | null): TabId {
+  return value === 'interview' || value === 'prep' ? 'interview' : 'resume';
+}
 
 function HeaderControls() {
   const { language, setLanguage, t } = useAppLanguage();
@@ -51,8 +57,16 @@ function HeaderControls() {
 
 function HomeShell() {
   const { t } = useAppLanguage();
-  const [activeTab, setActiveTab] = useState<TabId>('resume');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<TabId>(() =>
+    tabFromSearch(searchParams.get('tab'))
+  );
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    setActiveTab(tabFromSearch(searchParams.get('tab')));
+  }, [searchParams]);
 
   const [resumeHistoryId, setResumeHistoryId] = useState<string | null>(null);
   const [resumeHistoryRefreshKey, setResumeHistoryRefreshKey] = useState(0);
@@ -65,6 +79,7 @@ function HomeShell() {
   const selectTab = (tab: TabId) => {
     setActiveTab(tab);
     setMobileHistoryOpen(false);
+    router.replace(`/pages?tab=${tab}`, { scroll: false });
   };
 
   const navItems: { id: TabId; label: string; short: string }[] = [
@@ -79,9 +94,14 @@ function HomeShell() {
           aria-label="Main"
           className="print:hidden z-30 flex w-[72px] shrink-0 flex-col items-center gap-2 border-r border-[var(--shell-border)] bg-[var(--shell-rail)] py-4"
         >
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--shell-accent-btn)] text-xs font-bold text-[var(--shell-accent-btn-text)]">
+          <Link
+            href="/"
+            title={t.brand}
+            aria-label={`${t.brand} — home`}
+            className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--shell-accent-btn)] text-xs font-bold text-[var(--shell-accent-btn-text)] transition hover:opacity-90"
+          >
             AI
-          </div>
+          </Link>
           {navItems.map((item) => {
             const active = activeTab === item.id;
             return (
@@ -197,11 +217,19 @@ function HomeShell() {
   );
 }
 
-export default function Home() {
+export default function WorkspacePage() {
   return (
     <AppThemeProvider>
       <AppLanguageProvider>
-        <HomeShell />
+        <Suspense
+          fallback={
+            <div className="flex h-dvh items-center justify-center bg-[var(--shell-bg)] text-sm text-[var(--shell-muted)]">
+              Loading…
+            </div>
+          }
+        >
+          <HomeShell />
+        </Suspense>
       </AppLanguageProvider>
     </AppThemeProvider>
   );

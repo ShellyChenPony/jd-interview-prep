@@ -84,6 +84,32 @@ export type UiCopy = {
   coverTips: string;
   copyLetter: string;
   letterCopied: string;
+  homeBadge: string;
+  homeHeadline: string;
+  homeHeadlineAccent: string;
+  homeSub: string;
+  homeCtaResume: string;
+  homeCtaPrep: string;
+  homeOpenApp: string;
+  homeFeaturesTitle: string;
+  homeFeaturesSub: string;
+  homeFeatureResumeTitle: string;
+  homeFeatureResumeBody: string;
+  homeFeatureQuestionsTitle: string;
+  homeFeatureQuestionsBody: string;
+  homeFeatureMatchTitle: string;
+  homeFeatureMatchBody: string;
+  homeFeatureCoverTitle: string;
+  homeFeatureCoverBody: string;
+  homeStepsTitle: string;
+  homeStep1Title: string;
+  homeStep1Body: string;
+  homeStep2Title: string;
+  homeStep2Body: string;
+  homeStep3Title: string;
+  homeStep3Body: string;
+  homeFooterCta: string;
+  homeFooterNote: string;
 };
 
 const EN: UiCopy = {
@@ -177,6 +203,37 @@ const EN: UiCopy = {
   coverTips: 'NZ tips',
   copyLetter: 'Copy letter',
   letterCopied: 'Copied!',
+  homeBadge: 'Powered by AI',
+  homeHeadline: 'Remote job prep,',
+  homeHeadlineAccent: 'made clear',
+  homeSub:
+    'Format your resume, practice from a real JD, check fit, and draft a New Zealand cover letter — in one place.',
+  homeCtaResume: 'Format my resume',
+  homeCtaPrep: 'Prep from a JD',
+  homeOpenApp: 'Open workspace',
+  homeFeaturesTitle: 'What you can do here',
+  homeFeaturesSub: 'Four tools. One calm workflow from resume to interview.',
+  homeFeatureResumeTitle: 'Resume template',
+  homeFeatureResumeBody:
+    'Upload or paste, let AI structure it, then export PDF. Small edits sync without another AI call.',
+  homeFeatureQuestionsTitle: '15 interview questions',
+  homeFeatureQuestionsBody:
+    'Paste a JD and get high-frequency questions with sample answers and review links.',
+  homeFeatureMatchTitle: 'JD × Resume match',
+  homeFeatureMatchBody:
+    'See fit score, strengths, gaps, and a concrete plan before you apply.',
+  homeFeatureCoverTitle: 'NZ cover letter',
+  homeFeatureCoverBody:
+    'Generate a recommendation / cover letter tailored to the JD — standard for New Zealand applications.',
+  homeStepsTitle: 'How to start',
+  homeStep1Title: 'Polish the resume',
+  homeStep1Body: 'Open Resume, format once with AI, save to history.',
+  homeStep2Title: 'Paste the target JD',
+  homeStep2Body: 'Switch to Prep and drop in the job description.',
+  homeStep3Title: 'Practice, match, write',
+  homeStep3Body: 'Generate questions, analyze fit, then draft the cover letter.',
+  homeFooterCta: 'Enter the workspace',
+  homeFooterNote: 'Your history stays on this device. Language and theme follow you into the app.',
 };
 
 const ZH_CN: UiCopy = {
@@ -266,6 +323,34 @@ const ZH_CN: UiCopy = {
   coverTips: '新西兰投递提示',
   copyLetter: '复制全文',
   letterCopied: '已复制！',
+  homeBadge: 'AI 驱动',
+  homeHeadline: '远程求职准备，',
+  homeHeadlineAccent: '一目了然',
+  homeSub:
+    '排版简历、按 JD 刷题、匹配分析、生成新西兰推荐信——一个工作区走完。',
+  homeCtaResume: '开始排版简历',
+  homeCtaPrep: '从 JD 开始准备',
+  homeOpenApp: '进入工作区',
+  homeFeaturesTitle: '本站能做什么',
+  homeFeaturesSub: '四个工具，一条从简历到面试的清晰路径。',
+  homeFeatureResumeTitle: '简历模板',
+  homeFeatureResumeBody:
+    '上传或粘贴后用 AI 结构化排版，可导出 PDF；小改动可同步，无需再次调用 AI。',
+  homeFeatureQuestionsTitle: '15 道面试题',
+  homeFeatureQuestionsBody: '粘贴 JD，生成高频题、参考答案与复习链接。',
+  homeFeatureMatchTitle: 'JD × 简历匹配',
+  homeFeatureMatchBody: '查看匹配分、优势、缺口，以及应聘前的具体提升计划。',
+  homeFeatureCoverTitle: '新西兰推荐信',
+  homeFeatureCoverBody: '按 JD + 简历生成 Cover Letter——新西兰投递岗位时常用。',
+  homeStepsTitle: '怎么开始',
+  homeStep1Title: '先排好简历',
+  homeStep1Body: '进入简历页，用 AI 排版一次并保存到历史。',
+  homeStep2Title: '粘贴目标 JD',
+  homeStep2Body: '切换到面试准备，贴上职位描述。',
+  homeStep3Title: '刷题 · 匹配 · 写信',
+  homeStep3Body: '生成题目、分析匹配度，再写推荐信。',
+  homeFooterCta: '进入工作区',
+  homeFooterNote: '历史保存在本设备。语言与主题设置会带入工作区。',
 };
 
 export function getUiCopy(code: ResumeLanguageCode | string | null | undefined): UiCopy {

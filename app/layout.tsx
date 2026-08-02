@@ -1,20 +1,21 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { DM_Sans, Fraunces } from 'next/font/google';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const dmSans = DM_Sans({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const fraunces = Fraunces({
+  variable: '--font-display',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "AI Remote Job Interview Prep",
-  description: "Prepare for remote interviews and polish a ready-to-use resume.",
+  title: 'AI Remote Job Prep',
+  description:
+    'Format your resume, practice interview questions from a JD, check fit, and draft a New Zealand cover letter.',
 };
 
 export default function RootLayout({
@@ -25,9 +26,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="h-full overflow-hidden print:overflow-visible">{children}</body>
+      <body className="h-full antialiased">{children}</body>
     </html>
   );
 }

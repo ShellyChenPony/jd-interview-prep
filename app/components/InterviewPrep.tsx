@@ -6,15 +6,17 @@ import { useAppLanguage } from '@/lib/app-language';
 import { getDeviceId } from '@/lib/device-id';
 import type { InterviewPrepHistoryRecord } from '@/lib/interview-prep-history';
 import {
+  CoverLetterSchema,
   InterviewPrepSchema,
   JdResumeMatchSchema,
+  type CoverLetterResult,
   type InterviewPrepResult,
   type JdResumeMatchResult,
 } from '@/lib/interview-prep';
 import type { ResumeHistoryListItem } from '@/lib/resume-history';
 import type { ResumeTemplate } from '@/lib/resume-template';
 
-type PrepMode = 'questions' | 'match';
+type PrepMode = 'questions' | 'match' | 'cover';
 
 function ReviewLinks({
   links,
@@ -67,6 +69,7 @@ async function createPrepHistory(input: {
   jobSummary?: string;
   questions?: InterviewPrepResult['questions'];
   match?: JdResumeMatchResult | null;
+  coverLetter?: CoverLetterResult | null;
   resumeHistoryId?: string | null;
   resumeLabel?: string;
 }): Promise<string | null> {
@@ -91,6 +94,7 @@ async function updatePrepHistory(
     jobSummary?: string;
     questions?: InterviewPrepResult['questions'];
     match?: JdResumeMatchResult | null;
+    coverLetter?: CoverLetterResult | null;
     resumeHistoryId?: string | null;
     resumeLabel?: string;
   }
@@ -139,6 +143,8 @@ export default function InterviewPrep({
   const savedPrepRef = useRef<InterviewPrepResult | null>(null);
   const [savedPrep, setSavedPrep] = useState<InterviewPrepResult | null>(null);
   const [savedMatch, setSavedMatch] = useState<JdResumeMatchResult | null>(null);
+  const [savedCover, setSavedCover] = useState<CoverLetterResult | null>(null);
+  const [letterCopied, setLetterCopied] = useState(false);
 
   const {
     object,
@@ -239,6 +245,58 @@ export default function InterviewPrep({
         } catch (err) {
           setLocalError(
             err instanceof Error ? err.message : 'Failed to save match history'
+          );
+        }
+      })();
+    },
+  });
+
+  const {
+    object: coverObject,
+    submit: submitCover,
+    isLoading: coverLoading,
+    error: coverError,
+    clear: clearCoverStream,
+  } = useObject({
+    api: '/api/cover-letter',
+    schema: CoverLetterSchema,
+    onFinish: ({ object: finished, error: finishError }) => {
+      if (finishError || !finished) return;
+      const parsed = CoverLetterSchema.safeParse(finished);
+      if (!parsed.success) return;
+      setSavedCover(parsed.data);
+
+      void (async () => {
+        try {
+          const currentId = prepSessionIdRef.current;
+          const currentJd = jdTextRef.current;
+          const { historyId, label } = resumeMetaRef.current;
+          const prep = savedPrepRef.current;
+          if (currentId) {
+            await updatePrepHistory(currentId, {
+              jdText: currentJd,
+              coverLetter: parsed.data,
+              resumeHistoryId: historyId || null,
+              resumeLabel: label,
+            });
+            onHistorySaved?.(currentId);
+          } else {
+            const id = await createPrepHistory({
+              jdText: currentJd,
+              jobSummary: prep?.jobSummary ?? '',
+              questions: prep?.questions ?? [],
+              coverLetter: parsed.data,
+              resumeHistoryId: historyId || null,
+              resumeLabel: label,
+            });
+            setPrepSessionId(id);
+            prepSessionIdRef.current = id;
+            skipNextExternalLoadRef.current = true;
+            onHistorySaved?.(id);
+          }
+        } catch (err) {
+          setLocalError(
+            err instanceof Error ? err.message : 'Failed to save cover letter history'
           );
         }
       })();
@@ -358,6 +416,33 @@ export default function InterviewPrep({
     submitMatch({ jdText, resume: selectedResume, language });
   };
 
+  const handleCoverLetter = () => {
+    if (!jdText.trim()) {
+      setLocalError(t.pasteJdFirst);
+      return;
+    }
+    if (!selectedResume) {
+      setLocalError(t.selectResumeFirst);
+      return;
+    }
+    setLocalError(null);
+    setMode('cover');
+    setSavedCover(null);
+    setLetterCopied(false);
+    clearCoverStream();
+    submitCover({ jdText, resume: selectedResume, language });
+  };
+
+  const handleCopyLetter = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setLetterCopied(true);
+      window.setTimeout(() => setLetterCopied(false), 2000);
+    } catch {
+      setLocalError('Failed to copy letter');
+    }
+  };
+
   const handleSelectPrepHistory = async (id: string) => {
     setLocalError(null);
     try {
@@ -375,6 +460,7 @@ export default function InterviewPrep({
       const item = data.item;
       clearQuestions();
       clearMatchStream();
+      clearCoverStream();
       setJdText(item.jd_text || '');
       setPrepSessionId(item.id);
       prepSessionIdRef.current = item.id;
@@ -382,6 +468,8 @@ export default function InterviewPrep({
         asPrepResult(item.job_summary, item.questions_json)
       );
       setSavedMatch(item.match_json);
+      setSavedCover(item.cover_letter_json);
+      setLetterCopied(false);
       setSelectedHistoryId(item.resume_history_id || '');
       setSelectedResumeLabel(item.resume_label || '');
       setSelectedResume(null);
@@ -390,7 +478,13 @@ export default function InterviewPrep({
         void handleSelectResume(item.resume_history_id);
       }
 
-      setMode(item.match_json ? 'match' : 'questions');
+      setMode(
+        item.cover_letter_json
+          ? 'cover'
+          : item.match_json
+            ? 'match'
+            : 'questions'
+      );
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to load prep history');
     }
@@ -411,9 +505,12 @@ export default function InterviewPrep({
     if (resetKey === 0) return;
     clearQuestions();
     clearMatchStream();
+    clearCoverStream();
     setJdText('');
     setSavedPrep(null);
     setSavedMatch(null);
+    setSavedCover(null);
+    setLetterCopied(false);
     savedPrepRef.current = null;
     setPrepSessionId(null);
     prepSessionIdRef.current = null;
@@ -427,7 +524,7 @@ export default function InterviewPrep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  const busy = isLoading || matchLoading;
+  const busy = isLoading || matchLoading || coverLoading;
   const livePrep =
     savedPrep ??
     asPrepResult(
@@ -438,6 +535,9 @@ export default function InterviewPrep({
   const liveMatch =
     savedMatch ??
     (matchObject ? (matchObject as JdResumeMatchResult) : null);
+  const liveCover =
+    savedCover ??
+    (coverObject ? (coverObject as CoverLetterResult) : null);
   const questionCount = livePrep?.questions?.filter(Boolean).length ?? 0;
   const modeError =
     localError ||
@@ -446,6 +546,9 @@ export default function InterviewPrep({
       : null) ||
     (mode === 'match' && matchError
       ? 'Failed to analyze JD vs resume. Please try again.'
+      : null) ||
+    (mode === 'cover' && coverError
+      ? 'Failed to generate cover letter. Please try again.'
       : null);
 
   return (
@@ -468,7 +571,7 @@ export default function InterviewPrep({
       <div
         role="tablist"
         aria-label="Interview prep tools"
-        className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-2xl"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl"
       >
         {(
           [
@@ -481,6 +584,11 @@ export default function InterviewPrep({
               id: 'match' as const,
               label: t.matchTab,
               hint: t.matchHint,
+            },
+            {
+              id: 'cover' as const,
+              label: t.coverTab,
+              hint: t.coverHint,
             },
           ] as const
         ).map((tab) => {
@@ -775,6 +883,132 @@ export default function InterviewPrep({
                       ) : null
                     )}
                   </ol>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {mode === 'cover' && (
+        <section className="space-y-6" aria-labelledby="cover-panel-title">
+          <div>
+            <h3 id="cover-panel-title" className="text-lg font-semibold text-slate-900">
+              {t.coverTitle}
+            </h3>
+            <p className="text-sm text-slate-600 mt-1">{t.coverHelp}</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <div className="space-y-2">
+              <label
+                className="block text-sm font-medium text-slate-700"
+                htmlFor="cover-resume-history"
+              >
+                {t.resumeFromHistory}
+              </label>
+              <select
+                id="cover-resume-history"
+                value={selectedHistoryId}
+                onChange={(e) => void handleSelectResume(e.target.value)}
+                disabled={busy || historyLoading}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+              >
+                <option value="">
+                  {historyLoading ? t.loading : t.selectResume}
+                </option>
+                {historyItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {(item.name || 'Untitled') +
+                      (item.job_title ? ` · ${item.job_title}` : '') +
+                      ` · ${new Date(item.created_at).toLocaleDateString()}`}
+                  </option>
+                ))}
+              </select>
+              {historyError && (
+                <p className="text-xs text-amber-700">{historyError}</p>
+              )}
+              {selectedResumeLabel && (
+                <p className="text-xs text-slate-600">
+                  {t.selected}: {selectedResumeLabel}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCoverLetter}
+              disabled={busy || !jdText.trim() || !selectedResume}
+              className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-medium disabled:opacity-50 transition"
+            >
+              {coverLoading ? t.generatingCover : t.generateCover}
+            </button>
+          </div>
+
+          {coverLoading && !liveCover && (
+            <p className="text-sm text-slate-500">{t.generatingCoverWait}</p>
+          )}
+
+          {liveCover && (
+            <div className="space-y-4">
+              {(liveCover.roleTitle || liveCover.companyHint) && (
+                <div className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-4">
+                  {liveCover.roleTitle && (
+                    <p className="text-base font-semibold text-indigo-950">
+                      {liveCover.roleTitle}
+                    </p>
+                  )}
+                  {liveCover.companyHint && (
+                    <p className="text-sm text-indigo-900 mt-1">{liveCover.companyHint}</p>
+                  )}
+                </div>
+              )}
+
+              {liveCover.letter && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                      {t.coverLetter}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyLetter(liveCover.letter || '')}
+                      disabled={!liveCover.letter}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      {letterCopied ? t.letterCopied : t.copyLetter}
+                    </button>
+                  </div>
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-slate-800 leading-relaxed">
+                    {liveCover.letter}
+                    {coverLoading ? ' ▍' : ''}
+                  </pre>
+                </div>
+              )}
+
+              {liveCover.highlights && liveCover.highlights.length > 0 && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-2">
+                  <h4 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                    {t.coverHighlights}
+                  </h4>
+                  <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+                    {liveCover.highlights.map((item, idx) =>
+                      item ? <li key={`hl-${idx}`}>{item}</li> : null
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {liveCover.tips && liveCover.tips.length > 0 && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-2">
+                  <h4 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                    {t.coverTips}
+                  </h4>
+                  <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+                    {liveCover.tips.map((item, idx) =>
+                      item ? <li key={`tip-${idx}`}>{item}</li> : null
+                    )}
+                  </ul>
                 </div>
               )}
             </div>

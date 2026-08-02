@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
+import { getAppEnv } from '@/lib/app-env';
 import {
   deriveJdTitle,
   listMetaFromRow,
+  parseStoredCoverLetter,
   parseStoredMatch,
   parseStoredQuestions,
   type InterviewPrepHistoryRecord,
 } from '@/lib/interview-prep-history';
-import { JdResumeMatchSchema } from '@/lib/interview-prep';
+import { CoverLetterSchema, JdResumeMatchSchema } from '@/lib/interview-prep';
 import { getSupabaseServer, isSupabaseConfigured } from '@/lib/supabase/server';
 
 type Params = { params: Promise<{ id: string }> };
@@ -27,14 +29,16 @@ export async function GET(req: Request, { params }: Params) {
   }
 
   const { id } = await params;
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('interview_prep_history')
     .select(
-      'id, jd_text, jd_title, job_summary, questions_json, match_json, resume_history_id, resume_label, created_at, updated_at'
+      'id, jd_text, jd_title, job_summary, questions_json, match_json, cover_letter_json, resume_history_id, resume_label, created_at, updated_at'
     )
     .eq('id', id)
     .eq('device_id', deviceId)
+    .eq('env', env)
     .is('deleted_at', null)
     .maybeSingle();
 
@@ -53,6 +57,7 @@ export async function GET(req: Request, { params }: Params) {
     jd_text: data.jd_text ?? '',
     questions_json: parseStoredQuestions(data.questions_json),
     match_json: parseStoredMatch(data.match_json),
+    cover_letter_json: parseStoredCoverLetter(data.cover_letter_json),
     resume_history_id: data.resume_history_id ?? null,
   };
 
@@ -81,6 +86,7 @@ export async function PATCH(req: Request, { params }: Params) {
     jobSummary?: unknown;
     questions?: unknown;
     match?: unknown;
+    coverLetter?: unknown;
     resumeHistoryId?: unknown;
     resumeLabel?: unknown;
   };
@@ -107,6 +113,17 @@ export async function PATCH(req: Request, { params }: Params) {
         return NextResponse.json({ error: 'Invalid match payload' }, { status: 400 });
       }
       updates.match_json = parsed.data;
+    }
+  }
+  if (payload.coverLetter !== undefined) {
+    if (payload.coverLetter === null) {
+      updates.cover_letter_json = null;
+    } else {
+      const parsed = CoverLetterSchema.safeParse(payload.coverLetter);
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Invalid cover letter payload' }, { status: 400 });
+      }
+      updates.cover_letter_json = parsed.data;
     }
   }
   if (payload.resumeHistoryId !== undefined) {
@@ -140,15 +157,17 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   const { id } = await params;
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('interview_prep_history')
     .update(updates)
     .eq('id', id)
     .eq('device_id', deviceId)
+    .eq('env', env)
     .is('deleted_at', null)
     .select(
-      'id, jd_title, job_summary, questions_json, match_json, resume_label, created_at, updated_at'
+      'id, jd_title, job_summary, questions_json, match_json, cover_letter_json, resume_label, created_at, updated_at'
     )
     .maybeSingle();
 
@@ -176,12 +195,14 @@ export async function DELETE(req: Request, { params }: Params) {
 
   const { id } = await params;
   const now = new Date().toISOString();
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('interview_prep_history')
     .update({ deleted_at: now, updated_at: now })
     .eq('id', id)
     .eq('device_id', deviceId)
+    .eq('env', env)
     .is('deleted_at', null)
     .select('id')
     .maybeSingle();

@@ -157,6 +157,7 @@ export default function PrepHistoryDrawer({
                     {item.has_match
                       ? ` · fit ${item.fit_score ?? '—'}/100`
                       : ' · no match yet'}
+                    {item.has_cover_letter ? ' · letter' : ''}
                     {item.resume_label ? ` · ${item.resume_label}` : ''}
                   </p>
                   <p className="text-xs text-slate-400 mt-1">

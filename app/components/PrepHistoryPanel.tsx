@@ -162,6 +162,7 @@ export default function PrepHistoryPanel({
                                 {item.has_match
                                   ? ` · fit ${item.fit_score ?? '—'}/100`
                                   : ' · no match'}
+                                {item.has_cover_letter ? ' · letter' : ''}
                               </p>
                               <p className="text-[11px] text-[var(--shell-subtle)] mt-0.5">
                                 {formatTime(item.updated_at || item.created_at)}

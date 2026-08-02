@@ -85,5 +85,29 @@ export const JdResumeMatchSchema = z.object({
     .describe('Actionable upgrade suggestions with references'),
 });
 
+/** NZ-style cover / recommendation letter for job applications. */
+export const CoverLetterSchema = z.object({
+  roleTitle: z
+    .string()
+    .describe('Target role title inferred from the JD'),
+  companyHint: z
+    .string()
+    .describe(
+      'Company or hiring team name if present in the JD; otherwise a short placeholder like "Hiring Manager"'
+    ),
+  letter: z
+    .string()
+    .describe(
+      'Full cover letter body ready to copy: greeting, 3-4 paragraphs, closing and sign-off'
+    ),
+  highlights: z
+    .array(z.string())
+    .describe('3-5 key selling points woven into the letter'),
+  tips: z
+    .array(z.string())
+    .describe('2-4 short NZ application tips specific to this letter / role'),
+});
+
 export type InterviewPrepResult = z.infer<typeof InterviewPrepSchema>;
 export type JdResumeMatchResult = z.infer<typeof JdResumeMatchSchema>;
+export type CoverLetterResult = z.infer<typeof CoverLetterSchema>;

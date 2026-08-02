@@ -47,6 +47,8 @@ export type UiCopy = {
   questionsHint: string;
   matchTab: string;
   matchHint: string;
+  coverTab: string;
+  coverHint: string;
   generateQuestionsTitle: string;
   generateQuestionsHelp: string;
   generate15: string;
@@ -72,6 +74,16 @@ export type UiCopy = {
   improvementPlan: string;
   pasteJdFirst: string;
   selectResumeFirst: string;
+  coverTitle: string;
+  coverHelp: string;
+  generateCover: string;
+  generatingCover: string;
+  generatingCoverWait: string;
+  coverLetter: string;
+  coverHighlights: string;
+  coverTips: string;
+  copyLetter: string;
+  letterCopied: string;
 };
 
 const EN: UiCopy = {
@@ -83,11 +95,11 @@ const EN: UiCopy = {
   resumeSubtitle: 'Upload or paste a resume, format with AI, then export.',
   prepTitle: 'Interview Prep',
   prepSubtitle:
-    'Paste a JD, generate practice questions, or analyze fit against a saved resume.',
+    'Paste a JD, generate practice questions, analyze fit, or draft an NZ cover letter.',
   resumeHistory: 'Resume History',
   resumeHistoryHint: 'Saved formatted resumes',
   prepHistory: 'Prep History',
-  prepHistoryHint: 'JD, questions & fit analyses',
+  prepHistoryHint: 'JD, questions, fit & cover letters',
   new: 'New',
   loading: 'Loading…',
   delete: 'Delete',
@@ -125,6 +137,8 @@ const EN: UiCopy = {
   questionsHint: 'Practice Qs + sample answers',
   matchTab: 'JD × Resume',
   matchHint: 'Fit analysis + improvement plan',
+  coverTab: 'Cover Letter',
+  coverHint: 'NZ-style letter from JD + resume',
   generateQuestionsTitle: 'Generate interview questions',
   generateQuestionsHelp:
     'Generate 15 high-frequency questions from the JD, each with a sample answer and review links.',
@@ -152,6 +166,17 @@ const EN: UiCopy = {
   improvementPlan: 'If you apply: improvement plan',
   pasteJdFirst: 'Please paste a JD first.',
   selectResumeFirst: 'Please select a resume from History first.',
+  coverTitle: 'NZ cover / recommendation letter',
+  coverHelp:
+    'Pick a resume, then generate a one-page cover letter tailored to this JD — common for New Zealand applications.',
+  generateCover: 'Generate letter',
+  generatingCover: 'Writing…',
+  generatingCoverWait: 'Drafting your NZ cover letter…',
+  coverLetter: 'Letter',
+  coverHighlights: 'Highlights used',
+  coverTips: 'NZ tips',
+  copyLetter: 'Copy letter',
+  letterCopied: 'Copied!',
 };
 
 const ZH_CN: UiCopy = {
@@ -162,11 +187,11 @@ const ZH_CN: UiCopy = {
   resumeTitle: '简历模板',
   resumeSubtitle: '上传或粘贴简历，用 AI 排版后导出。',
   prepTitle: '面试准备',
-  prepSubtitle: '粘贴 JD，生成练习题，或与已保存简历做匹配分析。',
+  prepSubtitle: '粘贴 JD，生成练习题、匹配分析，或按新西兰习惯写推荐信。',
   resumeHistory: '简历历史',
   resumeHistoryHint: '已保存的排版简历',
   prepHistory: '面试历史',
-  prepHistoryHint: 'JD、题目与匹配分析',
+  prepHistoryHint: 'JD、题目、匹配与推荐信',
   new: '新建',
   loading: '加载中…',
   delete: '删除',
@@ -203,6 +228,8 @@ const ZH_CN: UiCopy = {
   questionsHint: '练习题 + 参考答案',
   matchTab: 'JD × 简历',
   matchHint: '匹配分析 + 提升建议',
+  coverTab: '推荐信',
+  coverHint: '按 JD 生成新西兰求职信',
   generateQuestionsTitle: '生成面试题',
   generateQuestionsHelp: '基于 JD 生成 15 道高频题，每题含建议答案与复习链接。',
   generate15: '生成 15 道题',
@@ -228,6 +255,17 @@ const ZH_CN: UiCopy = {
   improvementPlan: '如果要应聘：提升建议',
   pasteJdFirst: '请先粘贴 JD。',
   selectResumeFirst: '请先从历史中选择一份简历。',
+  coverTitle: '新西兰推荐信 / Cover Letter',
+  coverHelp:
+    '选择简历后，按本 JD 生成一页求职推荐信——新西兰投递岗位时常用。',
+  generateCover: '生成推荐信',
+  generatingCover: '撰写中…',
+  generatingCoverWait: '正在撰写新西兰风格推荐信…',
+  coverLetter: '正文',
+  coverHighlights: '信中亮点',
+  coverTips: '新西兰投递提示',
+  copyLetter: '复制全文',
+  letterCopied: '已复制！',
 };
 
 export function getUiCopy(code: ResumeLanguageCode | string | null | undefined): UiCopy {

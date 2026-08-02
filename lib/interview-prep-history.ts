@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import {
+  CoverLetterSchema,
   InterviewPrepSchema,
   JdResumeMatchSchema,
+  type CoverLetterResult,
   type InterviewPrepResult,
   type JdResumeMatchResult,
 } from '@/lib/interview-prep';
@@ -27,6 +29,7 @@ export type InterviewPrepHistoryListItem = {
   job_summary: string;
   question_count: number;
   has_match: boolean;
+  has_cover_letter: boolean;
   fit_score: number | null;
   resume_label: string;
   created_at: string;
@@ -37,6 +40,7 @@ export type InterviewPrepHistoryRecord = InterviewPrepHistoryListItem & {
   jd_text: string;
   questions_json: InterviewPrepResult['questions'];
   match_json: JdResumeMatchResult | null;
+  cover_letter_json: CoverLetterResult | null;
   resume_history_id: string | null;
 };
 
@@ -77,6 +81,12 @@ export function parseStoredMatch(value: unknown): JdResumeMatchResult | null {
   return parsed.success ? parsed.data : null;
 }
 
+export function parseStoredCoverLetter(value: unknown): CoverLetterResult | null {
+  if (value == null) return null;
+  const parsed = CoverLetterSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 export function toInterviewPrepResult(
   jobSummary: string,
   questions: InterviewPrepResult['questions']
@@ -94,18 +104,21 @@ export function listMetaFromRow(row: {
   job_summary: string;
   questions_json: unknown;
   match_json: unknown;
+  cover_letter_json?: unknown;
   resume_label: string;
   created_at: string;
   updated_at: string;
 }): InterviewPrepHistoryListItem {
   const questions = parseStoredQuestions(row.questions_json);
   const match = parseStoredMatch(row.match_json);
+  const coverLetter = parseStoredCoverLetter(row.cover_letter_json);
   return {
     id: row.id,
     jd_title: row.jd_title,
     job_summary: row.job_summary,
     question_count: questions.length,
     has_match: Boolean(match),
+    has_cover_letter: Boolean(coverLetter),
     fit_score: typeof match?.fitScore === 'number' ? match.fitScore : null,
     resume_label: row.resume_label ?? '',
     created_at: row.created_at,

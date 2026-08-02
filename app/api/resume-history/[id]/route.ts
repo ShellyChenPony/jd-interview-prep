@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAppEnv } from '@/lib/app-env';
 import { parseInterviewMarkers } from '@/lib/resume-interview';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
 import { getSupabaseServer, isSupabaseConfigured } from '@/lib/supabase/server';
@@ -21,6 +22,7 @@ export async function GET(req: Request, { params }: Params) {
   }
 
   const { id } = await params;
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
@@ -29,6 +31,7 @@ export async function GET(req: Request, { params }: Params) {
     )
     .eq('id', id)
     .eq('device_id', deviceId)
+    .eq('env', env)
     .is('deleted_at', null)
     .maybeSingle();
 
@@ -103,12 +106,14 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   const { id } = await params;
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
     .update(updates)
     .eq('id', id)
     .eq('device_id', deviceId)
+    .eq('env', env)
     .is('deleted_at', null)
     .select('id, name, job_title, source_filename, language, created_at')
     .maybeSingle();
@@ -136,12 +141,14 @@ export async function DELETE(req: Request, { params }: Params) {
   }
 
   const { id } = await params;
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .eq('device_id', deviceId)
+    .eq('env', env)
     .is('deleted_at', null)
     .select('id')
     .maybeSingle();

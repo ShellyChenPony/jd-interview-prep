@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAppEnv } from '@/lib/app-env';
 import { parseInterviewMarkers } from '@/lib/resume-interview';
 import { normalizeResumeLanguage } from '@/lib/resume-languages';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
@@ -22,11 +23,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Missing device id' }, { status: 400 });
   }
 
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
     .select('id, name, job_title, source_filename, language, created_at')
     .eq('device_id', deviceId)
+    .eq('env', env)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -74,11 +77,13 @@ export async function POST(req: Request) {
   const interviewMarkers = parseInterviewMarkers(payload.interviewMarkers ?? []);
 
   const resume = parsed.data;
+  const env = getAppEnv();
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
     .insert({
       device_id: deviceId,
+      env,
       name: resume.name,
       job_title: resume.title,
       source_filename: payload.sourceFilename ?? null,

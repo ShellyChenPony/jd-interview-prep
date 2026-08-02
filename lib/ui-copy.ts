@@ -66,6 +66,18 @@ export type UiCopy = {
   formatAi: string;
   formatting: string;
   savingHistory: string;
+  customTplTitle: string;
+  customTplHelp: string;
+  customTplUploadPdf: string;
+  customTplUploading: string;
+  customTplAnalyzing: string;
+  customTplUploadFail: string;
+  customTplPdfOnly: string;
+  customTplNone: string;
+  customTplNoneHint: string;
+  customTplNewName: string;
+  customTplEmpty: string;
+  customTplActive: string;
   syncEdits: string;
   syncHint: string;
   interviewMarkers: string;
@@ -221,6 +233,19 @@ const EN: UiCopy = {
   formatAi: 'Format with AI',
   formatting: 'Formatting...',
   savingHistory: 'Saving to history...',
+  customTplTitle: 'PDF resume templates',
+  customTplHelp:
+    'Upload a resume PDF as a layout/style template, then paste your own content and click Format with AI — we fill that template with your facts.',
+  customTplUploadPdf: 'Upload PDF template',
+  customTplUploading: 'Reading PDF…',
+  customTplAnalyzing: 'Analyzing template…',
+  customTplUploadFail: 'Failed to upload template PDF. Please try again.',
+  customTplPdfOnly: 'Please upload a PDF file.',
+  customTplNone: 'Default',
+  customTplNoneHint: 'Standard AI format (no PDF template)',
+  customTplNewName: 'PDF template',
+  customTplEmpty: 'No PDF templates yet. Upload one to get started.',
+  customTplActive: 'Using PDF template',
   syncEdits: 'Sync edits to resume (no AI)',
   syncHint:
     'Upload only extracts text into the box. After AI Format, tweak names/phones/companies in the text and click Sync — no extra API call. Large rewrites still need Format with AI.',
@@ -385,6 +410,19 @@ const ZH_CN: UiCopy = {
   formatAi: 'AI 排版',
   formatting: '正在排版...',
   savingHistory: '正在保存历史...',
+  customTplTitle: 'PDF 简历模板',
+  customTplHelp:
+    '上传一份简历 PDF 作为版式/风格模板，再粘贴你自己的简历内容，点「AI 排版」会按该模板填充你的信息。',
+  customTplUploadPdf: '上传 PDF 模板',
+  customTplUploading: '正在读取 PDF…',
+  customTplAnalyzing: '正在分析模板…',
+  customTplUploadFail: '上传模板失败，请重试。',
+  customTplPdfOnly: '请上传 PDF 文件。',
+  customTplNone: '默认',
+  customTplNoneHint: '标准 AI 排版（不使用 PDF 模板）',
+  customTplNewName: 'PDF 模板',
+  customTplEmpty: '还没有 PDF 模板，先上传一份吧。',
+  customTplActive: '正在使用 PDF 模板',
   syncEdits: '同步修改到简历（不调用 AI）',
   syncHint:
     '上传只提取文本到输入框。AI 排版后，可改姓名/电话/公司名再点同步——不额外调用接口。大段重写仍需 AI 排版。',

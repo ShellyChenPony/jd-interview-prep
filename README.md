@@ -31,6 +31,8 @@ Top-right: **language** (en / zh-CN) and **theme** (light / dark). AI copy and U
 ### 1. Resume Template (`?tab=resume`)
 - Upload PDF / Word / text, or paste resume content
 - **Format with AI** into a structured, printable template
+- **PDF templates** — upload a resume PDF as a layout/style reference; **Format with AI** fills it with your own resume content
+- Layout + color themes (classic / sidebar / banner / timeline)
 - **Sync edits** from the text box into the formatted resume without another AI call
 - **Interview markers** — generate Q-style anchors on the resume with sample answers and review links
 - Export: copy as text, print, download PDF
@@ -150,7 +152,8 @@ supabase/                  # schema + migrations
 | Route | Role |
 |-------|------|
 | `/api/extract-text` | Extract text from uploaded resume files |
-| `/api/format-resume` | AI resume formatting |
+| `/api/format-resume` | AI resume formatting (optional PDF template) |
+| `/api/analyze-resume-template` | Infer name/layout from uploaded PDF template text |
 | `/api/resume-interview` | Interview markers on resume |
 | `/api/resume-history` | Resume history CRUD (soft delete) |
 | `/api/generate` | 15 interview questions from JD |
@@ -159,6 +162,47 @@ supabase/                  # schema + migrations
 | `/api/interview-prep-history` | Prep history |
 | `/api/practice-recommend` | LeetCode recommendations from JD |
 | `/api/practice-history` | Practice recommendation history |
+
+---
+
+## TODO / Roadmap
+
+Gaps vs typical “premium resume” products (e.g. builder + ATS + career suite).  
+Priority: **P0** sooner · **P1** next · **P2** later.
+
+### Resume tools
+
+- [ ] **P0 — ATS / ResumeCheck**  
+  Resume health check without a JD: parseability, missing sections, dates/contact, weak verbs, ATS-friendly layout tips, optional score. Distinct from existing **JD × Resume** match.
+- [ ] **P0 — Word (.docx) export**  
+  Download besides PDF / copy-as-text.
+- [ ] **P1 — Expert content suggestions**  
+  Insertable phrase bank for summary / bullets (role-aware).
+- [ ] **P1 — More professionally designed templates**  
+  Expand beyond current theme picker (more layouts, ATS-safe variants).
+- [x] **PDF resume templates** *(done)*  
+  Upload a resume PDF as template → Format with AI maps your content into that structure/style.
+- [ ] **P1 — Stronger “builder” UX**  
+  Step-by-step section editor (not only paste → AI format), still keep AI path.
+- [ ] **P2 — Explicit “ATS-friendly” template mode**  
+  Single-column, standard headings, selectable text guarantees.
+
+### Career tools
+
+- [ ] **P2 — Online professional profile**  
+  Public share link / mini profile page (like Bold.pro-style hosting).
+- [ ] **P2 — Job board / apply instantly**  
+  Curated or partner jobs + one-click apply (large scope).
+
+### Already covered (no TODO)
+
+| Their label | Ours today |
+|-------------|------------|
+| Resume builder (partial) | AI format + sync + history |
+| Cover letter | NZ cover letter in Prep |
+| TXT download | Copy as text |
+| PDF download | Download PDF |
+| Interview prep | 15 Qs, JD match, cover letter, LeetCode / SQL drill |
 
 ---
 

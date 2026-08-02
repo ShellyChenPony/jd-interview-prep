@@ -2,9 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
+import CustomResumeTemplatePanel from '@/app/components/CustomResumeTemplatePanel';
 import InterviewQuestionDrawer from '@/app/components/InterviewQuestionDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
 import ResumeThemePicker from '@/app/components/ResumeThemePicker';
+import {
+  normalizeLayout,
+  toBrief,
+  type CustomResumeTemplate,
+} from '@/lib/custom-resume-templates';
 import { getDeviceId } from '@/lib/device-id';
 import { applySourceEditsToResume } from '@/lib/apply-resume-edits';
 import {
@@ -151,6 +157,9 @@ export default function ResumeTemplate({
   );
   const [activeMarker, setActiveMarker] = useState<ResumeInterviewMarker | null>(null);
   const [interviewDrawerOpen, setInterviewDrawerOpen] = useState(false);
+  const [customTemplate, setCustomTemplate] =
+    useState<CustomResumeTemplate | null>(null);
+  const customTemplateRef = useRef<CustomResumeTemplate | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingSourceRef = useRef<{
     text: string;
@@ -288,6 +297,18 @@ export default function ResumeTemplate({
     pendingSourceRef.current.language = language;
   }, [language]);
 
+  useEffect(() => {
+    customTemplateRef.current = customTemplate;
+  }, [customTemplate]);
+
+  const applyTemplateVisuals = (tpl: CustomResumeTemplate) => {
+    const preset = getColorPreset(tpl.colorPresetId);
+    setLayout(normalizeLayout(tpl.layout));
+    setColorPresetId(tpl.colorPresetId || DEFAULT_COLOR_PRESET_ID);
+    setBackground(tpl.background?.trim() || preset.background);
+    setAccent(tpl.accent?.trim() || preset.accent);
+  };
+
   const streamed = object as Partial<ResumeData> | undefined;
   const hasStreamedContent = Boolean(
     streamed?.name || streamed?.summary || (streamed?.experience && streamed.experience.length > 0)
@@ -336,7 +357,12 @@ export default function ResumeTemplate({
       filename: fileName,
       language,
     };
-    submit({ resumeText: trimmed, language });
+    const tpl = customTemplateRef.current;
+    submit({
+      resumeText: trimmed,
+      language,
+      customTemplate: tpl ? toBrief(tpl) : null,
+    });
   };
 
   const handleGenerateInterview = () => {
@@ -639,7 +665,24 @@ export default function ResumeTemplate({
 
         {syncMessage && <p className="text-sm text-green-700">{syncMessage}</p>}
 
+        {customTemplate && (
+          <p className="text-xs font-medium text-violet-800">
+            {t.customTplActive}: {customTemplate.name}
+            {customTemplate.sourceFilename
+              ? ` · ${customTemplate.sourceFilename}`
+              : ''}
+          </p>
+        )}
+
       </form>
+
+      <CustomResumeTemplatePanel
+        selectedId={customTemplate?.id ?? null}
+        language={language}
+        disabled={busy}
+        onSelect={setCustomTemplate}
+        onApplyVisuals={applyTemplateVisuals}
+      />
 
       <ResumeThemePicker
         layout={layout}

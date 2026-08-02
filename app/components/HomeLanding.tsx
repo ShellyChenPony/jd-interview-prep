@@ -14,7 +14,7 @@ function ProductMock() {
         <span className="h-2.5 w-2.5 rounded-full bg-[#c9d5e0]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#c9d5e0]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#c9d5e0]" />
-        <span className="ml-3 text-[11px] font-medium tracking-wide text-[#5a6d7e]">
+        <span className="ml-3 text-[11px] font-medium tracking-wide text-[#3d5163]">
           workspace · resume · prep · drill
         </span>
       </div>
@@ -136,7 +136,7 @@ export default function HomeLanding() {
           {t.brand}
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
-          <label className="flex items-center gap-2 text-sm text-[#5a6d7e]">
+          <label className="flex items-center gap-2 text-sm text-[#3d5163]">
             <span className="sr-only">{t.language}</span>
             <select
               value={language}
@@ -171,7 +171,7 @@ export default function HomeLanding() {
               {t.homeHeadline}{' '}
               <span className="text-[#0f766e]">{t.homeHeadlineAccent}</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-[#3d5163] sm:text-lg">
+            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-[#2c3e50] sm:text-lg">
               {t.homeSub}
             </p>
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:flex-wrap">
@@ -207,7 +207,7 @@ export default function HomeLanding() {
               <h2 className="font-[family-name:var(--font-display)] text-3xl tracking-tight text-[#0f2744] sm:text-4xl">
                 {t.homeFeaturesTitle}
               </h2>
-              <p className="mt-3 text-base text-[#5a6d7e]">{t.homeFeaturesSub}</p>
+              <p className="mt-3 text-base text-[#3d5163]">{t.homeFeaturesSub}</p>
             </div>
 
             <ol className="mt-12 divide-y divide-[#0f2744]/10 border-y border-[#0f2744]/10">
@@ -224,7 +224,7 @@ export default function HomeLanding() {
                       <h3 className="text-lg font-semibold text-[#0f2744] group-hover:text-[#0f766e]">
                         {feature.title}
                       </h3>
-                      <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[#5a6d7e] sm:text-base">
+                      <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[#3d5163] sm:text-base">
                         {feature.body}
                       </p>
                     </div>
@@ -250,7 +250,7 @@ export default function HomeLanding() {
                     {step.n}
                   </span>
                   <h3 className="mt-3 text-lg font-semibold text-[#0f2744]">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#5a6d7e]">{step.body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[#3d5163]">{step.body}</p>
                 </li>
               ))}
             </ol>
@@ -263,7 +263,7 @@ export default function HomeLanding() {
               <p className="font-[family-name:var(--font-display)] text-2xl tracking-tight sm:text-3xl">
                 {t.brand}
               </p>
-              <p className="mt-2 max-w-md text-sm text-[#a8b8c8]">{t.homeFooterNote}</p>
+              <p className="mt-2 max-w-md text-sm text-[#c5d4e0]">{t.homeFooterNote}</p>
             </div>
             <Link
               href="/pages"

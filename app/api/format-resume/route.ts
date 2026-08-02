@@ -30,11 +30,13 @@ export async function POST(req: Request) {
 
   const customBlock = customTemplate
     ? `\n${briefToPromptBlock(customTemplate)}\n
-Task: Rewrite the USER resume so it follows the uploaded PDF template's structure, section order, bullet density, and professional tone as closely as possible, while still returning our fixed JSON schema.
-- Mirror how the template organizes Summary / Skills / Experience / Education / Projects when present.
-- Keep factual content from the USER resume only.
-- If the template has sections the user lacks, omit or leave empty arrays — do not invent.
-- If the user has content the template omits, still include it in the closest matching schema fields.\n`
+CRITICAL — PDF template mode is ON:
+- Follow the uploaded PDF template's section ORDER, headings, bullet density, and tone as closely as our JSON schema allows.
+- Mirror how the template organizes Summary / Skills / Experience / Education / Projects (and similar blocks) when present.
+- Prefer the template's level of detail (short vs dense bullets) over a generic rewrite.
+- Keep factual content from the USER resume only — never invent from the template.
+- If the template has sections the user lacks, omit or leave empty arrays.
+- If the user has content the template omits, place it in the closest matching schema fields.\n`
     : '';
 
   const result = streamText({
@@ -52,9 +54,9 @@ Rules:
 - Polish wording into clear, achievement-oriented language (STAR-style bullets with metrics when present).
 - If the source language differs from ${language.promptName}, translate naturally and professionally.
 - Fill missing contact fields with empty strings.
-- Group skills logically. Put experience newest-first.
+- Group skills logically. Put experience newest-first${customTemplate ? ' unless the PDF template clearly uses a different order — then follow the template' : ''}.
 - If projects are absent, return an empty projects array.
-- Keep summary concise (2–4 sentences). Prefer 2–5 bullets per role.
+- Keep summary concise (2–4 sentences)${customTemplate ? ' unless the PDF template uses a clearly different summary length — then match the template' : ''}. Prefer 2–5 bullets per role${customTemplate ? ' unless the template is denser or sparser' : ''}.
 - Keep company names, product names, and well-known tech terms accurate; translate surrounding prose into ${language.promptName}.
 
 USER resume content (facts to keep):

@@ -8,6 +8,7 @@ import {
 
 /** v2: PDF-uploaded templates with extracted reference text. */
 const STORAGE_KEY = 'custom-resume-templates-v2';
+const SELECTED_KEY = 'custom-resume-template-selected-v2';
 
 /** Cap stored / prompted template text (localStorage + LLM context). */
 export const MAX_TEMPLATE_TEXT_CHARS = 14_000;
@@ -23,6 +24,8 @@ export const CustomResumeTemplateSchema = z.object({
   colorPresetId: z.string(),
   background: z.string().optional(),
   accent: z.string().optional(),
+  /** AI notes from analyze-resume-template (section order, density, tone). */
+  styleNotes: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -35,6 +38,7 @@ export const CustomTemplateBriefSchema = z.object({
   sourceFilename: z.string(),
   templateText: z.string(),
   layout: z.string(),
+  styleNotes: z.string().optional(),
 });
 
 export type CustomTemplateBrief = z.infer<typeof CustomTemplateBriefSchema>;
@@ -66,6 +70,7 @@ export function createPdfCustomTemplate(input: {
   templateText: string;
   layout?: string;
   colorPresetId?: string;
+  styleNotes?: string;
 }): CustomResumeTemplate {
   const now = new Date().toISOString();
   return {
@@ -75,6 +80,7 @@ export function createPdfCustomTemplate(input: {
     templateText: truncateTemplateText(input.templateText),
     layout: normalizeLayout(input.layout),
     colorPresetId: input.colorPresetId || DEFAULT_COLOR_PRESET_ID,
+    styleNotes: input.styleNotes?.trim() || undefined,
     createdAt: now,
     updatedAt: now,
   };
@@ -90,6 +96,7 @@ export function toBrief(t: CustomResumeTemplate): CustomTemplateBrief {
     sourceFilename: t.sourceFilename,
     templateText: truncateTemplateText(t.templateText),
     layout: normalizeLayout(t.layout),
+    styleNotes: t.styleNotes?.trim() || undefined,
   };
 }
 
@@ -124,6 +131,7 @@ export function upsertCustomTemplate(
     ...template,
     templateText: truncateTemplateText(template.templateText),
     layout: normalizeLayout(template.layout),
+    styleNotes: template.styleNotes?.trim() || undefined,
     updatedAt: new Date().toISOString(),
   };
   if (idx >= 0) items[idx] = next;
@@ -135,19 +143,42 @@ export function upsertCustomTemplate(
 export function deleteCustomTemplate(id: string): CustomResumeTemplate[] {
   const items = listCustomTemplates().filter((t) => t.id !== id);
   saveCustomTemplates(items);
+  if (getSelectedCustomTemplateId() === id) {
+    setSelectedCustomTemplateId(null);
+  }
   return items;
 }
 
+export function getSelectedCustomTemplateId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage.getItem(SELECTED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setSelectedCustomTemplateId(id: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!id) window.localStorage.removeItem(SELECTED_KEY);
+    else window.localStorage.setItem(SELECTED_KEY, id);
+  } catch {
+    // ignore
+  }
+}
+
 export function briefToPromptBlock(brief: CustomTemplateBrief): string {
+  const notes = brief.styleNotes?.trim();
   return `
-The user uploaded a PDF resume TEMPLATE. Use it ONLY as a structure / style / section-order reference.
-Do NOT copy names, employers, schools, or metrics from the template — those belong to someone else.
+The user uploaded a PDF resume TEMPLATE. Use it as the PRIMARY structure / section-order / tone reference.
+Do NOT copy names, employers, schools, dates, or metrics from the template — those belong to someone else.
 Fill the template pattern with the USER resume content below.
 
 Template name: ${brief.name || '(unnamed)'}
 Template file: ${brief.sourceFilename || '(unknown)'}
-Preferred visual layout hint: ${brief.layout}
-
+Preferred visual layout hint (for our renderer): ${brief.layout}
+${notes ? `\nStyle notes from template analysis:\n${notes}\n` : ''}
 --- BEGIN PDF TEMPLATE TEXT ---
 ${brief.templateText}
 --- END PDF TEMPLATE TEXT ---

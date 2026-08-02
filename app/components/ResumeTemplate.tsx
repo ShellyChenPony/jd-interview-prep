@@ -10,6 +10,7 @@ import { aiFetch, aiRequestHeaders } from '@/lib/ai-request-headers';
 import {
   normalizeLayout,
   toBrief,
+  upsertCustomTemplate,
   type CustomResumeTemplate,
 } from '@/lib/custom-resume-templates';
 import { getDeviceId } from '@/lib/device-id';
@@ -315,6 +316,14 @@ export default function ResumeTemplate({
     setColorPresetId(tpl.colorPresetId || DEFAULT_COLOR_PRESET_ID);
     setBackground(tpl.background?.trim() || preset.background);
     setAccent(tpl.accent?.trim() || preset.accent);
+  };
+
+  const handleLayoutChange = (next: ResumeLayoutId) => {
+    setLayout(next);
+    if (!customTemplate) return;
+    const updated: CustomResumeTemplate = { ...customTemplate, layout: next };
+    upsertCustomTemplate(updated);
+    setCustomTemplate(updated);
   };
 
   const streamed = object as Partial<ResumeData> | undefined;
@@ -647,6 +656,14 @@ export default function ResumeTemplate({
           disabled={busy}
         />
 
+        <CustomResumeTemplatePanel
+          selectedId={customTemplate?.id ?? null}
+          language={language}
+          disabled={busy}
+          onSelect={setCustomTemplate}
+          onApplyVisuals={applyTemplateVisuals}
+        />
+
         <div className="grid gap-2 sm:grid-cols-2">
           <button
             type="submit"
@@ -657,7 +674,9 @@ export default function ResumeTemplate({
               ? `${t.formatting} (${getResumeLanguage(language).label})`
               : savingHistory
                 ? t.savingHistory
-                : `${t.formatAi} (${getResumeLanguage(language).label})`}
+                : customTemplate
+                  ? `${t.formatAiWithTpl} (${getResumeLanguage(language).label})`
+                  : `${t.formatAi} (${getResumeLanguage(language).label})`}
           </button>
           <button
             type="button"
@@ -674,7 +693,7 @@ export default function ResumeTemplate({
         {syncMessage && <p className="text-sm text-green-700">{syncMessage}</p>}
 
         {customTemplate && (
-          <p className="text-xs font-medium text-violet-800">
+          <p className="text-xs font-medium text-violet-800 dark:text-violet-200">
             {t.customTplActive}: {customTemplate.name}
             {customTemplate.sourceFilename
               ? ` · ${customTemplate.sourceFilename}`
@@ -684,28 +703,53 @@ export default function ResumeTemplate({
 
       </form>
 
-      <CustomResumeTemplatePanel
-        selectedId={customTemplate?.id ?? null}
-        language={language}
-        disabled={busy}
-        onSelect={setCustomTemplate}
-        onApplyVisuals={applyTemplateVisuals}
-      />
-
       <ResumeThemePicker
         layout={layout}
         colorPresetId={colorPresetId}
         background={background}
         accent={accent}
-        onLayoutChange={setLayout}
+        pdfTemplateMappedHint={
+          customTemplate ? t.customTplLayoutMapped : null
+        }
+        onLayoutChange={handleLayoutChange}
         onColorPresetChange={(presetId) => {
           const preset = getColorPreset(presetId);
           setColorPresetId(presetId);
           setBackground(preset.background);
           setAccent(preset.accent);
+          if (customTemplate) {
+            const updated: CustomResumeTemplate = {
+              ...customTemplate,
+              colorPresetId: presetId,
+              background: preset.background,
+              accent: preset.accent,
+            };
+            upsertCustomTemplate(updated);
+            setCustomTemplate(updated);
+          }
         }}
-        onBackgroundChange={setBackground}
-        onAccentChange={setAccent}
+        onBackgroundChange={(color) => {
+          setBackground(color);
+          if (customTemplate) {
+            const updated: CustomResumeTemplate = {
+              ...customTemplate,
+              background: color,
+            };
+            upsertCustomTemplate(updated);
+            setCustomTemplate(updated);
+          }
+        }}
+        onAccentChange={(color) => {
+          setAccent(color);
+          if (customTemplate) {
+            const updated: CustomResumeTemplate = {
+              ...customTemplate,
+              accent: color,
+            };
+            upsertCustomTemplate(updated);
+            setCustomTemplate(updated);
+          }
+        }}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">

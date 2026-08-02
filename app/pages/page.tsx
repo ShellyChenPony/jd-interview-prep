@@ -85,17 +85,14 @@ function WorkspaceShell() {
 
   const [resumeHistoryId, setResumeHistoryId] = useState<string | null>(null);
   const [resumeHistoryRefreshKey, setResumeHistoryRefreshKey] = useState(0);
-  const [resumeResetKey, setResumeResetKey] = useState(0);
 
   const [prepHistoryId, setPrepHistoryId] = useState<string | null>(null);
   const [prepHistoryRefreshKey, setPrepHistoryRefreshKey] = useState(0);
-  const [prepResetKey, setPrepResetKey] = useState(0);
 
   const [practiceCategoryId, setPracticeCategoryId] =
     useState<JobCategoryId>('frontend');
   const [practiceHistoryId, setPracticeHistoryId] = useState<string | null>(null);
   const [practiceHistoryRefreshKey, setPracticeHistoryRefreshKey] = useState(0);
-  const [practiceResetKey, setPracticeResetKey] = useState(0);
 
   const selectTab = (tab: TabId) => {
     setActiveTab(tab);
@@ -186,11 +183,6 @@ function WorkspaceShell() {
                 setResumeHistoryId(id);
                 setMobileHistoryOpen(false);
               }}
-              onNew={() => {
-                setResumeHistoryId(null);
-                setResumeResetKey((n) => n + 1);
-                setMobileHistoryOpen(false);
-              }}
             />
           ) : activeTab === 'interview' ? (
             <PrepHistoryPanel
@@ -198,11 +190,6 @@ function WorkspaceShell() {
               refreshKey={prepHistoryRefreshKey}
               onSelect={(id) => {
                 setPrepHistoryId(id);
-                setMobileHistoryOpen(false);
-              }}
-              onNew={() => {
-                setPrepHistoryId(null);
-                setPrepResetKey((n) => n + 1);
                 setMobileHistoryOpen(false);
               }}
             />
@@ -218,11 +205,6 @@ function WorkspaceShell() {
               }}
               onSelectHistory={(id) => {
                 setPracticeHistoryId(id);
-                setMobileHistoryOpen(false);
-              }}
-              onNew={() => {
-                setPracticeHistoryId(null);
-                setPracticeResetKey((n) => n + 1);
                 setMobileHistoryOpen(false);
               }}
             />
@@ -247,7 +229,6 @@ function WorkspaceShell() {
             {activeTab === 'resume' ? (
               <ResumeTemplate
                 activeHistoryId={resumeHistoryId}
-                resetKey={resumeResetKey}
                 onHistorySaved={(id) => {
                   setResumeHistoryId(id);
                   setResumeHistoryRefreshKey((n) => n + 1);
@@ -256,7 +237,6 @@ function WorkspaceShell() {
             ) : activeTab === 'interview' ? (
               <InterviewPrep
                 activeHistoryId={prepHistoryId}
-                resetKey={prepResetKey}
                 onHistorySaved={(id) => {
                   setPrepHistoryId(id);
                   setPrepHistoryRefreshKey((n) => n + 1);
@@ -266,7 +246,6 @@ function WorkspaceShell() {
               <PracticeBoard
                 selectedCategoryId={practiceCategoryId}
                 activeHistoryId={practiceHistoryId}
-                resetKey={practiceResetKey}
                 onCategoryChange={(id) => {
                   setPracticeCategoryId(id);
                   setPracticeHistoryId(null);

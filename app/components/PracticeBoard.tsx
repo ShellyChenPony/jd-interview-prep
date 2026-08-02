@@ -345,7 +345,7 @@ export default function PracticeBoard({
               }`}
             >
               <span className="block text-sm font-semibold">{tab.label}</span>
-              <span className="block text-xs mt-0.5 opacity-70">{tab.hint}</span>
+              <span className="block text-xs mt-0.5 opacity-90">{tab.hint}</span>
             </button>
           );
         })}

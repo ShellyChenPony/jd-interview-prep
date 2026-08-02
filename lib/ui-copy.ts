@@ -78,6 +78,10 @@ export type UiCopy = {
   customTplNewName: string;
   customTplEmpty: string;
   customTplActive: string;
+  customTplApplyHint: string;
+  customTplLayoutMapped: string;
+  customTplStyleNotes: string;
+  formatAiWithTpl: string;
   quotaLoading: string;
   quotaLoadFail: string;
   quotaTitle: string;
@@ -250,7 +254,7 @@ const EN: UiCopy = {
   savingHistory: 'Saving to history...',
   customTplTitle: 'PDF resume templates',
   customTplHelp:
-    'Upload a resume PDF as a layout/style template, then paste your own content and click Format with AI — we fill that template with your facts.',
+    '1) Upload a sample resume PDF as the style reference. 2) Paste YOUR content above. 3) Click Format with AI — we rewrite your facts to follow that PDF’s section order and tone. Preview still uses one of our visual layouts (Classic / Sidebar / …) mapped from the PDF — not a pixel copy of the PDF.',
   customTplUploadPdf: 'Upload PDF template',
   customTplUploading: 'Reading PDF…',
   customTplAnalyzing: 'Analyzing template…',
@@ -261,6 +265,12 @@ const EN: UiCopy = {
   customTplNewName: 'PDF template',
   customTplEmpty: 'No PDF templates yet. Upload one to get started.',
   customTplActive: 'Using PDF template',
+  customTplApplyHint:
+    'Template selected. Click Format with AI again to apply it to your content.',
+  customTplLayoutMapped:
+    'Visual layout is mapped from the PDF (not a 1:1 PDF clone). You can override below.',
+  customTplStyleNotes: 'Template style notes',
+  formatAiWithTpl: 'Format with AI (PDF template)',
   quotaLoading: 'AI quota…',
   quotaLoadFail: 'Could not load AI quota',
   quotaTitle: 'Today’s free AI uses',
@@ -443,7 +453,7 @@ const ZH_CN: UiCopy = {
   savingHistory: '正在保存历史...',
   customTplTitle: 'PDF 简历模板',
   customTplHelp:
-    '上传一份简历 PDF 作为版式/风格模板，再粘贴你自己的简历内容，点「AI 排版」会按该模板填充你的信息。',
+    '① 上传一份「样例」简历 PDF 作为风格参考；② 在上方粘贴你自己的内容；③ 点「AI 排版」——会按该 PDF 的章节顺序与语气重写你的事实。预览仍使用我们内置的视觉版式（Classic / Sidebar 等），是从 PDF 映射的最接近布局，不是 1:1 还原 PDF。',
   customTplUploadPdf: '上传 PDF 模板',
   customTplUploading: '正在读取 PDF…',
   customTplAnalyzing: '正在分析模板…',
@@ -454,6 +464,11 @@ const ZH_CN: UiCopy = {
   customTplNewName: 'PDF 模板',
   customTplEmpty: '还没有 PDF 模板，先上传一份吧。',
   customTplActive: '正在使用 PDF 模板',
+  customTplApplyHint: '已选中模板。请再点一次「AI 排版」，才会按该模板生成。',
+  customTplLayoutMapped:
+    '下方视觉版式由 PDF 映射而来（非 PDF 原样克隆），可手动改。',
+  customTplStyleNotes: '模板风格备注',
+  formatAiWithTpl: 'AI 排版（使用 PDF 模板）',
   quotaLoading: 'AI 次数…',
   quotaLoadFail: '无法加载 AI 次数',
   quotaTitle: '今日免费 AI 次数',

@@ -10,8 +10,8 @@
   --shell-panel: #f7f4ef;
   --shell-main: #faf8f5;
   --shell-card: #ffffff;
-  --shell-muted: #78716c;
-  --shell-subtle: #a8a29e;
+  --shell-muted: #57534e;
+  --shell-subtle: #78716c;
   --shell-border: rgba(28, 25, 23, 0.12);
   --shell-input: #ffffff;
   --shell-hover: rgba(255, 255, 255, 0.7);
@@ -28,8 +28,8 @@
   --shell-panel: #171412;
   --shell-main: #0f0e0d;
   --shell-card: #1c1917;
-  --shell-muted: #a8a29e;
-  --shell-subtle: #78716c;
+  --shell-muted: #d6d3d1;
+  --shell-subtle: #a8a29e;
   --shell-border: rgba(250, 250, 249, 0.1);
   --shell-input: #292524;
   --shell-hover: rgba(255, 255, 255, 0.06);
@@ -117,6 +117,21 @@ body {
   background-color: var(--shell-card) !important;
 }
 
+/* Segmented tab tracks / chips — keep inactive areas dark */
+.dark .app-workspace :is(
+  .bg-slate-100,
+  .bg-gray-100,
+  .bg-stone-100,
+  .bg-blue-50,
+  .bg-violet-50,
+  .bg-indigo-50,
+  .bg-sky-50,
+  .bg-orange-50,
+  .bg-teal-50
+):not(#resume-print):not(#resume-print *) {
+  background-color: var(--shell-input) !important;
+}
+
 .dark .app-workspace :is(
   .text-gray-900,
   .text-slate-900,
@@ -125,6 +140,26 @@ body {
   .text-slate-800
 ):not(#resume-print):not(#resume-print *) {
   color: #fafaf9 !important;
+}
+
+/* Light: bump washed-out Tailwind secondary text for readability */
+.app-workspace :is(
+  .text-gray-500,
+  .text-slate-500,
+  .text-stone-500,
+  .text-gray-400,
+  .text-slate-400,
+  .text-stone-400
+):not(#resume-print):not(#resume-print *) {
+  color: var(--shell-muted) !important;
+}
+
+.app-workspace :is(
+  .text-gray-600,
+  .text-slate-600,
+  .text-stone-600
+):not(#resume-print):not(#resume-print *) {
+  color: #44403c !important;
 }
 
 .dark .app-workspace :is(
@@ -136,7 +171,10 @@ body {
   .text-stone-600,
   .text-gray-500,
   .text-slate-500,
-  .text-stone-500
+  .text-stone-500,
+  .text-gray-400,
+  .text-slate-400,
+  .text-stone-400
 ):not(#resume-print):not(#resume-print *) {
   color: var(--shell-muted) !important;
 }

@@ -17,11 +17,10 @@ import {
   ResumeInterviewSchema,
   type ResumeInterviewMarker,
 } from '@/lib/resume-interview';
+import { useAppLanguage } from '@/lib/app-language';
 import {
   DEFAULT_RESUME_LANGUAGE,
   getResumeLanguage,
-  isResumeLanguageCode,
-  RESUME_LANGUAGES,
   type ResumeLanguageCode,
 } from '@/lib/resume-languages';
 import {
@@ -124,6 +123,7 @@ export default function ResumeTemplate({
   resetKey = 0,
   onHistorySaved,
 }: Props) {
+  const { language, t } = useAppLanguage();
   const [rawText, setRawText] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -136,7 +136,6 @@ export default function ResumeTemplate({
   const historyRecordIdRef = useRef<string | null>(null);
   const skipNextExternalLoadRef = useRef(false);
   const [savingHistory, setSavingHistory] = useState(false);
-  const [language, setLanguage] = useState<ResumeLanguageCode>(DEFAULT_RESUME_LANGUAGE);
   const [sourceSnapshot, setSourceSnapshot] = useState('');
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [layout, setLayout] = useState<ResumeLayoutId>(DEFAULT_RESUME_LAYOUT);
@@ -284,6 +283,10 @@ export default function ResumeTemplate({
   useEffect(() => {
     historyRecordIdRef.current = historyRecordId;
   }, [historyRecordId]);
+
+  useEffect(() => {
+    pendingSourceRef.current.language = language;
+  }, [language]);
 
   const streamed = object as Partial<ResumeData> | undefined;
   const hasStreamedContent = Boolean(
@@ -541,9 +544,6 @@ export default function ResumeTemplate({
       setHistoryRecordId(data.item.id);
       historyRecordIdRef.current = data.item.id;
       clearInterview();
-      if (isResumeLanguageCode(data.item.language)) {
-        setLanguage(data.item.language);
-      }
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to load record');
     }
@@ -573,30 +573,12 @@ export default function ResumeTemplate({
       <form onSubmit={handleSubmit} className="space-y-3 print:hidden">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-sm text-gray-600">
-              Upload/paste first (edit freely), then Format once with AI. Small text fixes can sync
-              into the generated resume without another AI call.
-            </p>
+            <p className="text-sm text-gray-600">{t.resumeHelp}</p>
             {fileName && (
               <p className="text-xs text-gray-500 mt-1">Loaded: {fileName}</p>
             )}
           </div>
           <div className="flex flex-wrap gap-2 items-center">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <span className="whitespace-nowrap">Language</span>
-              <select
-                value={language}
-                disabled={busy}
-                onChange={(e) => setLanguage(e.target.value as ResumeLanguageCode)}
-                className="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm disabled:opacity-50"
-              >
-                {RESUME_LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.label}
-                  </option>
-                ))}
-              </select>
-            </label>
             <input
               ref={fileInputRef}
               type="file"
@@ -610,7 +592,7 @@ export default function ResumeTemplate({
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
             >
-              {extracting ? 'Extracting text...' : 'Upload file'}
+              {extracting ? t.extracting : t.uploadFile}
             </button>
             <button
               type="button"
@@ -618,14 +600,14 @@ export default function ResumeTemplate({
               disabled={busy}
               className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
             >
-              Reset sample
+              {t.resetSample}
             </button>
           </div>
         </div>
 
         <textarea
           className="w-full h-40 p-4 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition border-gray-300 text-sm"
-          placeholder="Paste resume content here (Chinese or English)..."
+          placeholder={t.pasteResume}
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}
           disabled={busy}
@@ -638,10 +620,10 @@ export default function ResumeTemplate({
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl disabled:opacity-50 transition shadow"
           >
             {isLoading
-              ? `Formatting in ${getResumeLanguage(language).label}...`
+              ? `${t.formatting} (${getResumeLanguage(language).label})`
               : savingHistory
-                ? 'Saving to history...'
-                : `Format with AI (${getResumeLanguage(language).label})`}
+                ? t.savingHistory
+                : `${t.formatAi} (${getResumeLanguage(language).label})`}
           </button>
           <button
             type="button"
@@ -649,14 +631,11 @@ export default function ResumeTemplate({
             disabled={!canSyncEdits}
             className="w-full py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium rounded-xl disabled:opacity-50 transition"
           >
-            Sync edits to resume (no AI)
+            {t.syncEdits}
           </button>
         </div>
 
-        <p className="text-xs text-gray-500">
-          Upload only extracts text into the box. After AI Format, tweak names/phones/companies in
-          the text and click Sync — no extra API call. Large rewrites still need Format with AI.
-        </p>
+        <p className="text-xs text-gray-500">{t.syncHint}</p>
 
         {syncMessage && <p className="text-sm text-green-700">{syncMessage}</p>}
 
@@ -693,7 +672,7 @@ export default function ResumeTemplate({
             disabled={!hasGeneratedResume || busy || downloading}
             className="px-4 py-2 text-sm font-medium rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 disabled:opacity-50 transition"
           >
-            {interviewLoading ? 'Generating Q markers...' : 'Interview markers'}
+            {interviewLoading ? t.generatingMarkers : t.interviewMarkers}
           </button>
           <button
             type="button"
@@ -701,7 +680,7 @@ export default function ResumeTemplate({
             disabled={!displayResume?.name || busy || downloading}
             className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
           >
-            {copied ? 'Copied!' : 'Copy as text'}
+            {copied ? t.copied : t.copyText}
           </button>
           <button
             type="button"
@@ -709,7 +688,7 @@ export default function ResumeTemplate({
             disabled={!displayResume?.name || busy || downloading}
             className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
           >
-            Print
+            {t.print}
           </button>
           <button
             type="button"
@@ -717,7 +696,7 @@ export default function ResumeTemplate({
             disabled={!displayResume?.name || busy || downloading}
             className="px-4 py-2 text-sm font-medium rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition"
           >
-            {downloading ? 'Generating PDF...' : 'Download PDF'}
+            {downloading ? t.generatingPdf : t.downloadPdf}
           </button>
         </div>
       </div>

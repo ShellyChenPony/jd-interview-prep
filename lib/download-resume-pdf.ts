@@ -11,11 +11,8 @@ import {
   type ResumeTheme,
 } from '@/lib/resume-themes';
 
-/** Languages that need CJK-capable rendering (default PDF fonts can't draw them). */
-const CJK_LANGUAGES = new Set<ResumeLanguageCode>(['zh-CN', 'zh-TW', 'ja', 'ko']);
-
 export function languageNeedsCjkPdf(language: ResumeLanguageCode): boolean {
-  return CJK_LANGUAGES.has(language);
+  return language === 'zh-CN';
 }
 
 function safeFilename(name: string): string {

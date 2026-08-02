@@ -1,9 +1,5 @@
 import { Output, streamText } from 'ai';
-import {
-  DEFAULT_RESUME_LANGUAGE,
-  getResumeLanguage,
-  isResumeLanguageCode,
-} from '@/lib/resume-languages';
+import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languages';
 import { ResumeInterviewSchema } from '@/lib/resume-interview';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
 import { getChatModel } from '@/lib/openai';
@@ -35,10 +31,7 @@ function pickFocusAngles(count = 3): string[] {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const languageCode = isResumeLanguageCode(body?.language)
-    ? body.language
-    : DEFAULT_RESUME_LANGUAGE;
-  const language = getResumeLanguage(languageCode);
+  const language = getResumeLanguage(normalizeResumeLanguage(body?.language));
 
   const parsedResume = ResumeTemplateSchema.safeParse(body?.resume);
   if (!parsedResume.success) {

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseInterviewMarkers } from '@/lib/resume-interview';
-import {
-  DEFAULT_RESUME_LANGUAGE,
-  isResumeLanguageCode,
-} from '@/lib/resume-languages';
+import { normalizeResumeLanguage } from '@/lib/resume-languages';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
 import { getSupabaseServer, isSupabaseConfigured } from '@/lib/supabase/server';
 
@@ -71,9 +68,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid resume payload' }, { status: 400 });
   }
 
-  const language = isResumeLanguageCode(payload.language)
-    ? payload.language
-    : DEFAULT_RESUME_LANGUAGE;
+  const language = normalizeResumeLanguage(payload.language);
 
   const interviewMarkers = parseInterviewMarkers(payload.interviewMarkers ?? []);
 

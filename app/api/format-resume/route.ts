@@ -1,9 +1,5 @@
 import { Output, streamText } from 'ai';
-import {
-  DEFAULT_RESUME_LANGUAGE,
-  getResumeLanguage,
-  isResumeLanguageCode,
-} from '@/lib/resume-languages';
+import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languages';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
 import { getChatModel } from '@/lib/openai';
 
@@ -12,10 +8,7 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const body = await req.json();
   const resumeText = body?.resumeText;
-  const languageCode = isResumeLanguageCode(body?.language)
-    ? body.language
-    : DEFAULT_RESUME_LANGUAGE;
-  const language = getResumeLanguage(languageCode);
+  const language = getResumeLanguage(normalizeResumeLanguage(body?.language));
 
   if (!resumeText || typeof resumeText !== 'string' || !resumeText.trim()) {
     return new Response('Missing resume content', { status: 400 });

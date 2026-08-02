@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAppLanguage } from '@/lib/app-language';
 import { getDeviceId } from '@/lib/device-id';
 import type { ResumeHistoryListItem } from '@/lib/resume-history';
 import { getResumeLanguage } from '@/lib/resume-languages';
@@ -44,6 +45,7 @@ export default function ResumeHistoryPanel({
   refreshKey = 0,
   onNew,
 }: Props) {
+  const { t } = useAppLanguage();
   const [items, setItems] = useState<ResumeHistoryListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,38 +98,36 @@ export default function ResumeHistoryPanel({
   const groups = groupByDay(items);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col text-[var(--foreground)]">
       <div className="flex items-start justify-between gap-2 px-4 pt-5 pb-3">
         <div>
-          <h2 className="text-lg font-semibold text-stone-900">Resume History</h2>
-          <p className="text-xs text-stone-500 mt-0.5">Saved formatted resumes</p>
+          <h2 className="text-lg font-semibold">{t.resumeHistory}</h2>
+          <p className="text-xs text-[var(--shell-muted)] mt-0.5">{t.resumeHistoryHint}</p>
         </div>
         {onNew && (
           <button
             type="button"
             onClick={onNew}
-            className="shrink-0 rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-800"
+            className="shrink-0 rounded-full bg-[var(--shell-accent-btn)] px-3 py-1.5 text-xs font-medium text-[var(--shell-accent-btn-text)] hover:opacity-90"
           >
-            New
+            {t.new}
           </button>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-4">
-        {loading && <p className="px-1 text-sm text-stone-500">Loading…</p>}
+        {loading && <p className="px-1 text-sm text-[var(--shell-muted)]">{t.loading}</p>}
         {error && <p className="px-1 text-sm text-red-600 mb-3">{error}</p>}
         {!loading && !error && items.length === 0 && (
-          <div className="mx-1 mt-6 rounded-2xl border border-dashed border-stone-200 bg-white/60 px-4 py-8 text-center">
-            <p className="text-sm text-stone-500">
-              No saved resumes yet. Upload and format one on the right.
-            </p>
+          <div className="mx-1 mt-6 rounded-2xl border border-dashed border-[var(--shell-border)] bg-[var(--shell-card)]/60 px-4 py-8 text-center">
+            <p className="text-sm text-[var(--shell-muted)]">{t.noResumeHistory}</p>
           </div>
         )}
 
         <div className="space-y-5">
           {groups.map(([day, dayItems]) => (
             <section key={day}>
-              <h3 className="px-1 mb-2 text-xs font-medium text-stone-400">{day}</h3>
+              <h3 className="px-1 mb-2 text-xs font-medium text-[var(--shell-subtle)]">{day}</h3>
               <ul className="space-y-2">
                 {dayItems.map((item) => {
                   const active = selectedId === item.id;
@@ -136,8 +136,8 @@ export default function ResumeHistoryPanel({
                       <div
                         className={`rounded-2xl border px-3 py-3 transition ${
                           active
-                            ? 'border-stone-900/15 bg-white shadow-sm ring-1 ring-stone-900/5'
-                            : 'border-transparent bg-white/70 hover:bg-white hover:border-stone-200'
+                            ? 'border-[var(--shell-border)] bg-[var(--shell-card)] shadow-sm'
+                            : 'border-transparent bg-[var(--shell-card)]/50 hover:bg-[var(--shell-card)] hover:border-[var(--shell-border)]'
                         }`}
                       >
                         <button
@@ -148,17 +148,19 @@ export default function ResumeHistoryPanel({
                           <div className="flex items-start gap-2.5">
                             <span
                               className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                                active ? 'bg-stone-900' : 'bg-stone-300'
+                                active
+                                  ? 'bg-[var(--foreground)]'
+                                  : 'bg-[var(--shell-subtle)]'
                               }`}
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-stone-900">
+                              <p className="truncate text-sm font-medium">
                                 {item.name || 'Untitled'}
                               </p>
-                              <p className="truncate text-xs text-sky-700 mt-0.5">
+                              <p className="truncate text-xs text-sky-700 dark:text-sky-400 mt-0.5">
                                 {item.job_title || 'No title'}
                               </p>
-                              <p className="text-[11px] text-stone-400 mt-1.5">
+                              <p className="text-[11px] text-[var(--shell-subtle)] mt-1.5">
                                 {formatTime(item.created_at)}
                                 {` · ${getResumeLanguage(item.language).label}`}
                               </p>
@@ -172,7 +174,7 @@ export default function ResumeHistoryPanel({
                             onClick={() => handleDelete(item.id)}
                             className="text-[11px] text-red-600 hover:text-red-700 disabled:opacity-50"
                           >
-                            {deletingId === item.id ? 'Deleting…' : 'Delete'}
+                            {deletingId === item.id ? t.deleting : t.delete}
                           </button>
                         </div>
                       </div>

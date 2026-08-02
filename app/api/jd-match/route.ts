@@ -1,6 +1,7 @@
 import { Output, streamText } from 'ai';
 import { JdResumeMatchSchema } from '@/lib/interview-prep';
 import { getChatModel } from '@/lib/openai';
+import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languages';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
 
 export const maxDuration = 60;
@@ -9,6 +10,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const jdText = body?.jdText;
   const parsedResume = ResumeTemplateSchema.safeParse(body?.resume);
+  const language = getResumeLanguage(normalizeResumeLanguage(body?.language));
 
   if (!jdText || typeof jdText !== 'string' || !jdText.trim()) {
     return new Response('Missing JD content', { status: 400 });
@@ -44,7 +46,7 @@ Produce:
    - reviewLinks: 1-3 real https reference links (official docs preferred). Do NOT invent fake URLs.
 
 Be specific to THIS JD and THIS resume. Do not invent employers or projects not in the resume.
-Write the analysis in Chinese (links titles can be Chinese or English; URLs stay as-is).
+Write ALL analysis text (overallFit, points, evidence, impact, actions, details, link titles) in ${language.promptName}. URLs stay as-is.
 
 JD:
 ---

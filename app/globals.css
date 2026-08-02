@@ -1,8 +1,41 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f5;
+  --foreground: #1c1917;
+  --shell-bg: #f3f0eb;
+  --shell-rail: #efebe4;
+  --shell-panel: #f7f4ef;
+  --shell-main: #faf8f5;
+  --shell-card: #ffffff;
+  --shell-muted: #78716c;
+  --shell-subtle: #a8a29e;
+  --shell-border: rgba(28, 25, 23, 0.12);
+  --shell-input: #ffffff;
+  --shell-hover: rgba(255, 255, 255, 0.7);
+  --shell-active: #ffffff;
+  --shell-accent-btn: #0c0a09;
+  --shell-accent-btn-text: #ffffff;
+}
+
+.dark {
+  --background: #0c0a09;
+  --foreground: #fafaf9;
+  --shell-bg: #0c0a09;
+  --shell-rail: #141210;
+  --shell-panel: #171412;
+  --shell-main: #0f0e0d;
+  --shell-card: #1c1917;
+  --shell-muted: #a8a29e;
+  --shell-subtle: #78716c;
+  --shell-border: rgba(250, 250, 249, 0.1);
+  --shell-input: #292524;
+  --shell-hover: rgba(255, 255, 255, 0.06);
+  --shell-active: #292524;
+  --shell-accent-btn: #fafaf9;
+  --shell-accent-btn-text: #0c0a09;
 }
 
 @theme inline {
@@ -16,6 +49,76 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Soft dark remaps for workspace chrome (exclude resume preview / print surface). */
+.dark .app-workspace :is(
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-50\/80,
+  .bg-slate-50,
+  .bg-stone-50
+):not(#resume-print):not(#resume-print *) {
+  background-color: var(--shell-card) !important;
+}
+
+.dark .app-workspace :is(
+  .text-gray-900,
+  .text-slate-900,
+  .text-stone-900,
+  .text-gray-800,
+  .text-slate-800
+):not(#resume-print):not(#resume-print *) {
+  color: #fafaf9 !important;
+}
+
+.dark .app-workspace :is(
+  .text-gray-700,
+  .text-slate-700,
+  .text-stone-700,
+  .text-gray-600,
+  .text-slate-600,
+  .text-stone-600,
+  .text-gray-500,
+  .text-slate-500,
+  .text-stone-500
+):not(#resume-print):not(#resume-print *) {
+  color: var(--shell-muted) !important;
+}
+
+.dark .app-workspace :is(
+  .border-gray-200,
+  .border-gray-300,
+  .border-slate-200,
+  .border-stone-200,
+  .border-gray-100,
+  .border-slate-100,
+  .border-stone-100
+):not(#resume-print):not(#resume-print *) {
+  border-color: var(--shell-border) !important;
+}
+
+.dark .app-workspace :is(input, textarea, select):not(#resume-print *) {
+  background-color: var(--shell-input) !important;
+  color: #fafaf9 !important;
+  border-color: var(--shell-border) !important;
+}
+
+.dark .app-workspace :is(.bg-blue-50, .bg-sky-50, .bg-indigo-50, .bg-teal-50):not(#resume-print):not(#resume-print *) {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark .app-workspace :is(.text-blue-900, .text-sky-950, .text-indigo-950, .text-teal-950, .text-blue-950):not(#resume-print):not(#resume-print *) {
+  color: #e7e5e4 !important;
+}
+
+.dark .app-workspace :is(.border-blue-200, .border-sky-200, .border-indigo-200, .border-teal-200, .border-blue-100, .border-sky-100):not(#resume-print):not(#resume-print *) {
+  border-color: var(--shell-border) !important;
+}
+
+/* Keep resume preview readable/exportable in its own surface colors */
+.dark #resume-print {
+  color-scheme: light;
 }
 
 @media print {

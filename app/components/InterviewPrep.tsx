@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
+import { useAppLanguage } from '@/lib/app-language';
 import { getDeviceId } from '@/lib/device-id';
 import type { InterviewPrepHistoryRecord } from '@/lib/interview-prep-history';
 import {
@@ -17,14 +18,16 @@ type PrepMode = 'questions' | 'match';
 
 function ReviewLinks({
   links,
+  label,
 }: {
   links?: Array<{ title?: string; url?: string } | undefined>;
+  label: string;
 }) {
   if (!links?.length) return null;
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-        Review links
+        {label}
       </p>
       <ul className="space-y-1">
         {links.map((link, idx) => {
@@ -118,6 +121,7 @@ export default function InterviewPrep({
   resetKey = 0,
   onHistorySaved,
 }: Props) {
+  const { language, t } = useAppLanguage();
   const [mode, setMode] = useState<PrepMode>('questions');
   const [jdText, setJdText] = useState('');
   const [historyItems, setHistoryItems] = useState<ResumeHistoryListItem[]>([]);
@@ -335,23 +339,23 @@ export default function InterviewPrep({
     setPrepSessionId(null);
     prepSessionIdRef.current = null;
     clearQuestions();
-    submit({ jdText });
+    submit({ jdText, language });
   };
 
   const handleMatch = () => {
     if (!jdText.trim()) {
-      setLocalError('请先粘贴 JD。');
+      setLocalError(t.pasteJdFirst);
       return;
     }
     if (!selectedResume) {
-      setLocalError('请先从 History 选择一份简历。');
+      setLocalError(t.selectResumeFirst);
       return;
     }
     setLocalError(null);
     setMode('match');
     setSavedMatch(null);
     clearMatchStream();
-    submitMatch({ jdText, resume: selectedResume });
+    submitMatch({ jdText, resume: selectedResume, language });
   };
 
   const handleSelectPrepHistory = async (id: string) => {
@@ -449,15 +453,13 @@ export default function InterviewPrep({
       <section className="space-y-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
-            Job Description
+            {t.jobDescription}
           </h2>
-          <p className="text-sm text-slate-600 mt-1">
-            粘贴目标岗位 JD，再选择下方功能。生成结果会自动存入左侧 Prep History。
-          </p>
+          <p className="text-sm text-slate-600 mt-1">{t.jdHelp}</p>
         </div>
         <textarea
           className="w-full h-40 md:h-48 p-4 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 focus:outline-none transition resize-y"
-          placeholder="Paste the Job Description (JD) here..."
+          placeholder={t.jdPlaceholder}
           value={jdText}
           onChange={(e) => setJdText(e.target.value)}
         />
@@ -472,13 +474,13 @@ export default function InterviewPrep({
           [
             {
               id: 'questions' as const,
-              label: '15 Questions',
-              hint: '练习题 + 参考答案',
+              label: t.questionsTab,
+              hint: t.questionsHint,
             },
             {
               id: 'match' as const,
-              label: 'JD × Resume',
-              hint: '匹配分析 + 提升建议',
+              label: t.matchTab,
+              hint: t.matchHint,
             },
           ] as const
         ).map((tab) => {
@@ -516,11 +518,9 @@ export default function InterviewPrep({
                 id="questions-panel-title"
                 className="text-lg font-semibold text-slate-900"
               >
-                Generate interview questions
+                {t.generateQuestionsTitle}
               </h3>
-              <p className="text-sm text-slate-600 mt-1">
-                基于 JD 生成 15 道高频题，每题含建议答案与复习链接。
-              </p>
+              <p className="text-sm text-slate-600 mt-1">{t.generateQuestionsHelp}</p>
             </div>
             <button
               type="button"
@@ -528,14 +528,12 @@ export default function InterviewPrep({
               disabled={busy || !jdText.trim()}
               className="shrink-0 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium disabled:opacity-50 transition"
             >
-              {isLoading ? 'Generating…' : 'Generate 15 questions'}
+              {isLoading ? t.generating : t.generate15}
             </button>
           </div>
 
           {isLoading && !livePrep && (
-            <p className="text-sm text-slate-500">
-              正在分析 JD 并生成题目，大约需要一分钟…
-            </p>
+            <p className="text-sm text-slate-500">{t.generatingWait}</p>
           )}
 
           {livePrep && (
@@ -543,14 +541,14 @@ export default function InterviewPrep({
               {livePrep.jobSummary && (
                 <div className="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sky-950">
                   <p className="text-xs font-semibold uppercase tracking-wider text-sky-700 mb-1">
-                    Core requirement
+                    {t.coreRequirement}
                   </p>
                   <p className="text-sm leading-relaxed">{livePrep.jobSummary}</p>
                 </div>
               )}
 
               <div className="flex items-baseline justify-between gap-3">
-                <h4 className="text-base font-semibold text-slate-900">Questions</h4>
+                <h4 className="text-base font-semibold text-slate-900">{t.questions}</h4>
                 <span className="text-xs tabular-nums text-slate-500">
                   {questionCount} / 15
                   {isLoading ? ' · streaming' : ''}
@@ -574,7 +572,7 @@ export default function InterviewPrep({
 
                     {item?.whyAsked && (
                       <p className="text-sm text-slate-600 leading-relaxed pl-11">
-                        <span className="font-medium text-slate-800">Why asked · </span>
+                        <span className="font-medium text-slate-800">{t.whyAsked} · </span>
                         {item.whyAsked}
                       </p>
                     )}
@@ -582,7 +580,7 @@ export default function InterviewPrep({
                     {item?.suggestedAnswer && (
                       <div className="ml-0 sm:ml-11 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                          Suggested answer
+                          {t.suggestedAnswer}
                         </p>
                         <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
                           {item.suggestedAnswer}
@@ -593,7 +591,7 @@ export default function InterviewPrep({
                     {item?.keyPoints && item.keyPoints.length > 0 && (
                       <div className="sm:pl-11">
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                          Key tips
+                          {t.keyTips}
                         </p>
                         <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
                           {item.keyPoints.map((point, pIdx) => (
@@ -604,7 +602,7 @@ export default function InterviewPrep({
                     )}
 
                     <div className="sm:pl-11">
-                      <ReviewLinks links={item?.reviewLinks} />
+                      <ReviewLinks links={item?.reviewLinks} label={t.reviewLinks} />
                     </div>
                   </li>
                 ))}
@@ -618,11 +616,9 @@ export default function InterviewPrep({
         <section className="space-y-6" aria-labelledby="match-panel-title">
           <div>
             <h3 id="match-panel-title" className="text-lg font-semibold text-slate-900">
-              Compare JD with your resume
+              {t.matchTitle}
             </h3>
-            <p className="text-sm text-slate-600 mt-1">
-              从 Resume History 选择简历，分析匹配点、缺口与应聘前提升建议。
-            </p>
+            <p className="text-sm text-slate-600 mt-1">{t.matchHelp}</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
@@ -631,7 +627,7 @@ export default function InterviewPrep({
                 className="block text-sm font-medium text-slate-700"
                 htmlFor="resume-history"
               >
-                Resume from History
+                {t.resumeFromHistory}
               </label>
               <select
                 id="resume-history"
@@ -641,7 +637,7 @@ export default function InterviewPrep({
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
               >
                 <option value="">
-                  {historyLoading ? 'Loading history...' : 'Select a saved resume...'}
+                  {historyLoading ? t.loading : t.selectResume}
                 </option>
                 {historyItems.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -655,7 +651,9 @@ export default function InterviewPrep({
                 <p className="text-xs text-amber-700">{historyError}</p>
               )}
               {selectedResumeLabel && (
-                <p className="text-xs text-slate-600">Selected: {selectedResumeLabel}</p>
+                <p className="text-xs text-slate-600">
+                  {t.selected}: {selectedResumeLabel}
+                </p>
               )}
             </div>
 
@@ -665,19 +663,19 @@ export default function InterviewPrep({
               disabled={busy || !jdText.trim() || !selectedResume}
               className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium disabled:opacity-50 transition"
             >
-              {matchLoading ? 'Analyzing…' : 'Analyze fit'}
+              {matchLoading ? t.analyzing : t.analyzeFit}
             </button>
           </div>
 
           {matchLoading && !liveMatch && (
-            <p className="text-sm text-slate-500">正在比对 JD 与简历…</p>
+            <p className="text-sm text-slate-500">{t.analyzingWait}</p>
           )}
 
           {liveMatch && (
             <div className="space-y-4">
               <div className="rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4 space-y-2">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h4 className="text-base font-semibold text-teal-950">Overall fit</h4>
+                  <h4 className="text-base font-semibold text-teal-950">{t.overallFit}</h4>
                   {typeof liveMatch.fitScore === 'number' && (
                     <span className="text-sm font-semibold tabular-nums text-teal-900">
                       {liveMatch.fitScore}/100
@@ -695,7 +693,7 @@ export default function InterviewPrep({
                 {liveMatch.strongMatches && liveMatch.strongMatches.length > 0 && (
                   <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
                     <h4 className="text-sm font-semibold text-emerald-800 uppercase tracking-wide">
-                      适合的点
+                      {t.strongMatches}
                     </h4>
                     <ul className="space-y-3">
                       {liveMatch.strongMatches.map((item, idx) =>
@@ -717,7 +715,7 @@ export default function InterviewPrep({
                 {liveMatch.gaps && liveMatch.gaps.length > 0 && (
                   <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
                     <h4 className="text-sm font-semibold text-amber-800 uppercase tracking-wide">
-                      不合适 / 缺口
+                      {t.gaps}
                     </h4>
                     <ul className="space-y-3">
                       {liveMatch.gaps.map((item, idx) =>
@@ -740,7 +738,7 @@ export default function InterviewPrep({
               {liveMatch.improvementPlan && liveMatch.improvementPlan.length > 0 && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
                   <h4 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                    如果要应聘：提升建议
+                    {t.improvementPlan}
                   </h4>
                   <ol className="space-y-3">
                     {liveMatch.improvementPlan.map((item, idx) =>
@@ -772,7 +770,7 @@ export default function InterviewPrep({
                               {item.detail}
                             </p>
                           )}
-                          <ReviewLinks links={item.reviewLinks} />
+                          <ReviewLinks links={item.reviewLinks} label={t.reviewLinks} />
                         </li>
                       ) : null
                     )}

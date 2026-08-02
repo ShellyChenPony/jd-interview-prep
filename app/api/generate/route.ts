@@ -1,11 +1,14 @@
 import { Output, streamText } from 'ai';
 import { InterviewPrepSchema } from '@/lib/interview-prep';
 import { getChatModel } from '@/lib/openai';
+import { getResumeLanguage, normalizeResumeLanguage } from '@/lib/resume-languages';
 
 export const maxDuration = 90;
 
 export async function POST(req: Request) {
-  const { jdText } = await req.json();
+  const body = await req.json();
+  const jdText = body?.jdText;
+  const language = getResumeLanguage(normalizeResumeLanguage(body?.language));
 
   if (!jdText || typeof jdText !== 'string' || !jdText.trim()) {
     return new Response('Missing JD content', { status: 400 });
@@ -21,8 +24,10 @@ export async function POST(req: Request) {
     output: Output.object({ schema: InterviewPrepSchema }),
     prompt: `You are a senior Silicon Valley technical interviewer and career coach.
 
-Analyze the Job Description (JD) below and generate EXACTLY 15 high-frequency interview questions in English.
+Analyze the Job Description (JD) below and generate EXACTLY 15 high-frequency interview questions.
 
+Output language for jobSummary, questions, whyAsked, suggestedAnswer, and keyPoints: ${language.promptName}.
+Review link titles may be in ${language.promptName}; URLs stay as real https links.
 Return raw JSON only (no markdown code fences).
 
 Rules:

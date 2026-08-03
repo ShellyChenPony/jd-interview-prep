@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AI_QUOTA_CHANGED_EVENT,
   aiRequestHeaders,
@@ -29,6 +29,7 @@ const FEATURE_LABEL_KEY: Record<
 
 export default function AiQuotaBadge() {
   const { t } = useAppLanguage();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [snapshot, setSnapshot] = useState<AiQuotaSnapshot | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,26 @@ export default function AiQuotaBadge() {
     };
   }, [load]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target || rootRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
   if (error && !snapshot) {
     return null;
   }
@@ -81,7 +102,7 @@ export default function AiQuotaBadge() {
   const warn = exhausted.length > 0 || low.length > 0 || snapshot.totalRemaining <= 5;
 
   return (
-    <div className="relative print:hidden">
+    <div ref={rootRef} className="relative print:hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

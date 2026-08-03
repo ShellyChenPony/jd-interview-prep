@@ -66,6 +66,12 @@ export type UiCopy = {
   formatAi: string;
   formatting: string;
   savingHistory: string;
+  resumeTemplateLabel: string;
+  resumeTemplateHint: string;
+  templateAppearance: string;
+  showColors: string;
+  hideColors: string;
+  previewLabel: string;
   customTplTitle: string;
   customTplHelp: string;
   customTplUploadPdf: string;
@@ -189,7 +195,7 @@ const EN: UiCopy = {
   practiceNav: 'Drill',
   list: 'List',
   resumeTitle: 'Resume Template',
-  resumeSubtitle: 'Upload or paste a resume, format with AI, then export.',
+  resumeSubtitle: 'Format your resume with AI, then add interview markers.',
   prepTitle: 'Interview Prep',
   prepSubtitle:
     'Paste a JD, generate practice questions, analyze fit, or draft an NZ cover letter.',
@@ -245,7 +251,7 @@ const EN: UiCopy = {
   themeLight: 'Light',
   themeDark: 'Dark',
   resumeHelp:
-    'Upload/paste first (edit freely), then Format once with AI. Small text fixes can sync into the generated resume without another AI call.',
+    'Paste or upload your resume, Format with AI, then add Interview markers for practice hotspots.',
   uploadFile: 'Upload file',
   extracting: 'Extracting text...',
   resetSample: 'Reset sample',
@@ -253,10 +259,17 @@ const EN: UiCopy = {
   formatAi: 'Format with AI',
   formatting: 'Formatting...',
   savingHistory: 'Saving to history...',
+  resumeTemplateLabel: 'Resume template',
+  resumeTemplateHint:
+    'Pick a built-in layout, or upload a PDF as another template option.',
+  templateAppearance: 'Template & appearance',
+  showColors: 'Show colors',
+  hideColors: 'Hide colors',
+  previewLabel: 'Preview',
   customTplTitle: 'PDF resume templates',
   customTplHelp:
-    '1) Upload a sample resume PDF. 2) Paste YOUR content. 3) Click Format with AI. We infer a layout profile (columns, header, section order, density) and render a close visual match — not a pixel-perfect PDF clone.',
-  customTplUploadPdf: 'Upload PDF template',
+    'Upload a sample resume PDF as an extra template option under Resume template.',
+  customTplUploadPdf: 'Upload PDF',
   customTplUploading: 'Reading PDF…',
   customTplAnalyzing: 'Analyzing template…',
   customTplUploadFail: 'Failed to upload template PDF. Please try again.',
@@ -267,7 +280,7 @@ const EN: UiCopy = {
   customTplEmpty: 'No PDF templates yet. Upload one to get started.',
   customTplActive: 'Using PDF template',
   customTplApplyHint:
-    'Template selected. Click Format with AI again to apply it to your content.',
+    'Custom template selected — click Format with AI again to apply it.',
   customTplLayoutMapped:
     'Using PDF layout engine (columns / header / section order from your PDF). Color overrides below still apply.',
   customTplStyleNotes: 'Template style notes',
@@ -290,9 +303,9 @@ const EN: UiCopy = {
   quotaFeatPractice: 'LeetCode recommend',
   quotaFeatMarkers: 'Interview markers',
   quotaFeatAnalyzeTpl: 'PDF template analyze',
-  syncEdits: 'Sync edits to resume (no AI)',
+  syncEdits: 'Sync text edits (no AI)',
   syncHint:
-    'Upload only extracts text into the box. After AI Format, tweak names/phones/companies in the text and click Sync — no extra API call. Large rewrites still need Format with AI.',
+    'After Format, small fixes in the text box can sync without another AI call.',
   interviewMarkers: 'Interview markers',
   generatingMarkers: 'Generating Q markers...',
   copyText: 'Copy as text',
@@ -392,7 +405,7 @@ const ZH_CN: UiCopy = {
   practiceNav: '刷题',
   list: '列表',
   resumeTitle: '简历模板',
-  resumeSubtitle: '上传或粘贴简历，用 AI 排版后导出。',
+  resumeSubtitle: '用 AI 整理简历，再生成面试题标记。',
   prepTitle: '面试准备',
   prepSubtitle: '粘贴 JD，生成练习题、匹配分析，或按新西兰习惯写推荐信。',
   practiceTitle: 'LeetCode 刷题',
@@ -445,8 +458,7 @@ const ZH_CN: UiCopy = {
   theme: '主题',
   themeLight: '浅色',
   themeDark: '深色',
-  resumeHelp:
-    '先上传/粘贴（可自由修改），再用 AI 排版一次。小改动可同步到生成稿，无需再次调用 AI。',
+  resumeHelp: '粘贴或上传简历，用 AI 排版整理，再生成面试题标记做准备。',
   uploadFile: '上传文件',
   extracting: '正在提取文本...',
   resetSample: '恢复示例',
@@ -454,10 +466,15 @@ const ZH_CN: UiCopy = {
   formatAi: 'AI 排版',
   formatting: '正在排版...',
   savingHistory: '正在保存历史...',
+  resumeTemplateLabel: '简历模板',
+  resumeTemplateHint: '选择内置版式，或上传 PDF 作为额外模板选项。',
+  templateAppearance: '模板与外观',
+  showColors: '显示颜色',
+  hideColors: '隐藏颜色',
+  previewLabel: '预览',
   customTplTitle: 'PDF 简历模板',
-  customTplHelp:
-    '① 上传样例简历 PDF；② 粘贴你自己的内容；③ 点「AI 排版」。我们会推断版式配置（分栏、页眉、章节顺序、疏密）并尽量贴近原 PDF 视觉——不是像素级克隆。',
-  customTplUploadPdf: '上传 PDF 模板',
+  customTplHelp: '上传样例 PDF，会出现在「简历模板」选项里。',
+  customTplUploadPdf: '上传 PDF',
   customTplUploading: '正在读取 PDF…',
   customTplAnalyzing: '正在分析模板…',
   customTplUploadFail: '上传模板失败，请重试。',
@@ -467,12 +484,12 @@ const ZH_CN: UiCopy = {
   customTplNewName: 'PDF 模板',
   customTplEmpty: '还没有 PDF 模板，先上传一份吧。',
   customTplActive: '正在使用 PDF 模板',
-  customTplApplyHint: '已选中模板。请再点一次「AI 排版」，才会按该模板生成。',
+  customTplApplyHint: '已选中自定义模板。请再点一次「AI 排版」以应用。',
   customTplLayoutMapped:
     '正在使用 PDF 版式引擎（分栏 / 页眉 / 章节顺序来自 PDF）。下方仍可改颜色。',
   customTplStyleNotes: '模板风格备注',
   customTplProfilePending: '版式引擎尚未就绪——若分析未完成，请重新上传该 PDF。',
-  formatAiWithTpl: 'AI 排版（使用 PDF 模板）',
+  formatAiWithTpl: 'AI 排版（自定义模板）',
   quotaLoading: 'AI 次数…',
   quotaLoadFail: '无法加载 AI 次数',
   quotaTitle: '今日免费 AI 次数',
@@ -488,9 +505,8 @@ const ZH_CN: UiCopy = {
   quotaFeatPractice: '刷题推荐',
   quotaFeatMarkers: '面试标记',
   quotaFeatAnalyzeTpl: 'PDF 模板分析',
-  syncEdits: '同步修改到简历（不调用 AI）',
-  syncHint:
-    '上传只提取文本到输入框。AI 排版后，可改姓名/电话/公司名再点同步——不额外调用接口。大段重写仍需 AI 排版。',
+  syncEdits: '同步文本修改（不调用 AI）',
+  syncHint: '排版后可在文本框做小改动并同步，无需再次调用 AI。',
   interviewMarkers: '面试题标记',
   generatingMarkers: '正在生成面试标记...',
   copyText: '复制文本',

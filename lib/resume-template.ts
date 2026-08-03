@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
 export const ResumeTemplateSchema = z.object({
-  name: z.string().describe('Full name'),
+  name: z
+    .string()
+    .describe(
+      'Full name in output language. English mode: Romanized Latin letters only (e.g. Shaoli Chen), no Chinese characters.'
+    ),
   title: z.string().describe('Professional headline / target role'),
   contact: z.object({
     email: z.string().describe('Email, or empty string if missing'),
@@ -22,16 +26,20 @@ export const ResumeTemplateSchema = z.object({
   experience: z
     .array(
       z.object({
-        company: z.string(),
+        company: z
+          .string()
+          .describe('Employer name in the output language (English mode: English name, no Chinese)'),
         role: z.string(),
         location: z.string().describe('City or Remote'),
         period: z.string().describe('Date range, e.g. 2022 – Present'),
         bullets: z
           .array(z.string())
-          .describe('2-5 achievement bullets with impact when possible'),
+          .describe(
+            'Achievement bullets with impact. Newest role: 4-6 bullets; next: 3-4; older roles: 2-3.'
+          ),
       })
     )
-    .describe('Work experience, newest first'),
+    .describe('Work experience, newest first by end date'),
   education: z.array(
     z.object({
       school: z.string(),
@@ -42,15 +50,83 @@ export const ResumeTemplateSchema = z.object({
   projects: z
     .array(
       z.object({
-        name: z.string(),
-        description: z.string().describe('One or two sentences about the project'),
-        tech: z.string().describe('Tech stack, joined with · '),
+        name: z
+          .string()
+          .describe(
+            'Project — Company; entire string in output language (English mode: no Chinese characters)'
+          ),
+        description: z
+          .string()
+          .describe(
+            '1-3 sentences in output language; richer for projects from the most recent company'
+          ),
+        tech: z.string().describe('Tech stack / methods, joined with · ; empty string if none'),
       })
     )
-    .describe('Selected projects; empty array if none'),
+    .describe(
+      'Projects ordered by employment timeline (newest company first, matching experience order). Empty only if truly none.'
+    ),
 });
 
 export type ResumeTemplate = z.infer<typeof ResumeTemplateSchema>;
+
+/** Normalize company tokens for matching project ↔ experience. */
+function companyMatchKey(value: string): string {
+  const raw = value.toLowerCase().replace(/\s+/g, '');
+  if (/花旗|citi/.test(raw)) return 'citi';
+  if (/携程|ctrip|trip\.com/.test(raw)) return 'ctrip';
+  if (/同程|tongcheng|ly\.com/.test(raw)) return 'tongcheng';
+  if (/阿里|alibaba|alipay|蚂蚁|antgroup/.test(raw)) return 'alibaba';
+  if (/腾讯|tencent/.test(raw)) return 'tencent';
+  if (/字节|bytedance|抖音|tiktok/.test(raw)) return 'bytedance';
+  if (/美团|meituan/.test(raw)) return 'meituan';
+  if (/京东|jd\.com|jingdong/.test(raw)) return 'jd';
+  return raw.replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
+}
+
+function projectCompanyRank(
+  projectName: string,
+  experience: ResumeTemplate['experience']
+): number {
+  const hay = companyMatchKey(projectName);
+  for (let i = 0; i < experience.length; i++) {
+    const company = experience[i]?.company;
+    if (!company) continue;
+    const key = companyMatchKey(company);
+    if (!key) continue;
+    if (hay.includes(key) || key.includes(hay.slice(-Math.min(key.length, 12)))) {
+      return i;
+    }
+    // Match English short brand inside "Project — Company"
+    const short = key.slice(0, Math.min(8, key.length));
+    if (short.length >= 3 && hay.includes(short)) return i;
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
+
+/** Sort projects to follow experience timeline (newest employer first). */
+export function sortProjectsByExperience(
+  experience: ResumeTemplate['experience'],
+  projects: ResumeTemplate['projects']
+): ResumeTemplate['projects'] {
+  if (!projects?.length || !experience?.length) return projects ?? [];
+  return projects
+    .map((project, index) => ({
+      project,
+      index,
+      rank: projectCompanyRank(project.name, experience),
+    }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map((item) => item.project);
+}
+
+/** Post-process model output for stable ordering / language expectations. */
+export function normalizeFormattedResume(resume: ResumeTemplate): ResumeTemplate {
+  return {
+    ...resume,
+    projects: sortProjectsByExperience(resume.experience, resume.projects),
+  };
+}
 
 /** Remote-friendly English resume sample — replace with your own details. */
 export const sampleResume: ResumeTemplate = {

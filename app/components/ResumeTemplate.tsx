@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useObject } from '@ai-sdk/react';
-import CustomResumeTemplatePanel from '@/app/components/CustomResumeTemplatePanel';
 import InterviewQuestionDrawer from '@/app/components/InterviewQuestionDrawer';
 import ResumePreview from '@/app/components/ResumePreview';
 import ResumeThemePicker from '@/app/components/ResumeThemePicker';
@@ -33,6 +32,7 @@ import {
   type ResumeLanguageCode,
 } from '@/lib/resume-languages';
 import {
+  normalizeFormattedResume,
   resumeToPlainText,
   ResumeTemplateSchema,
   sampleResume,
@@ -162,6 +162,7 @@ export default function ResumeTemplate({
   const [interviewDrawerOpen, setInterviewDrawerOpen] = useState(false);
   const [customTemplate, setCustomTemplate] =
     useState<CustomResumeTemplate | null>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(true);
   const customTemplateRef = useRef<CustomResumeTemplate | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingSourceRef = useRef<{
@@ -185,7 +186,8 @@ export default function ResumeTemplate({
       const parsed = ResumeTemplateSchema.safeParse(finished);
       if (!parsed.success) return;
 
-      setSavedResume(parsed.data);
+      const resume = normalizeFormattedResume(parsed.data);
+      setSavedResume(resume);
       setSourceSnapshot(pendingSourceRef.current.text);
       setSyncMessage(null);
       setInterviewMarkers([]);
@@ -195,7 +197,7 @@ export default function ResumeTemplate({
       setSavingHistory(true);
       try {
         const id = await saveResumeHistory({
-          resume: parsed.data,
+          resume,
           sourceText: pendingSourceRef.current.text,
           sourceFilename: pendingSourceRef.current.filename,
           language: pendingSourceRef.current.language,
@@ -332,10 +334,6 @@ export default function ResumeTemplate({
 
   const handleLayoutChange = (next: ResumeLayoutId) => {
     setLayout(next);
-    if (!customTemplate) return;
-    const updated: CustomResumeTemplate = { ...customTemplate, layout: next };
-    upsertCustomTemplate(updated);
-    setCustomTemplate(updated);
   };
 
   const streamed = object as Partial<ResumeData> | undefined;
@@ -626,15 +624,13 @@ export default function ResumeTemplate({
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-3 print:hidden">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-sm text-gray-600">{t.resumeHelp}</p>
-            {fileName && (
-              <p className="text-xs text-gray-500 mt-1">Loaded: {fileName}</p>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
+      <form onSubmit={handleSubmit} className="space-y-4 print:hidden">
+        <div className="space-y-2">
+          <p className="text-sm text-[var(--shell-muted)]">{t.resumeHelp}</p>
+          {fileName && (
+            <p className="text-xs text-[var(--shell-subtle)]">Loaded: {fileName}</p>
+          )}
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -646,7 +642,7 @@ export default function ResumeTemplate({
               type="button"
               disabled={busy}
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+              className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
             >
               {extracting ? t.extracting : t.uploadFile}
             </button>
@@ -654,7 +650,7 @@ export default function ResumeTemplate({
               type="button"
               onClick={handleResetSample}
               disabled={busy}
-              className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+              className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
             >
               {t.resetSample}
             </button>
@@ -662,131 +658,153 @@ export default function ResumeTemplate({
         </div>
 
         <textarea
-          className="w-full h-40 p-4 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition border-gray-300 text-sm"
+          className="h-44 w-full rounded-xl border border-gray-300 p-4 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder={t.pasteResume}
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}
           disabled={busy}
         />
 
-        <CustomResumeTemplatePanel
-          selectedId={customTemplate?.id ?? null}
-          language={language}
-          disabled={busy}
-          onSelect={setCustomTemplate}
-          onApplyVisuals={applyTemplateVisuals}
-        />
+        <button
+          type="submit"
+          disabled={busy || !rawText.trim()}
+          className="w-full rounded-xl bg-blue-600 py-3.5 text-base font-semibold text-white shadow transition hover:bg-blue-700 disabled:opacity-50"
+        >
+          {isLoading
+            ? `${t.formatting} (${getResumeLanguage(language).label})`
+            : savingHistory
+              ? t.savingHistory
+              : customTemplate
+                ? `${t.formatAiWithTpl} (${getResumeLanguage(language).label})`
+                : `${t.formatAi} (${getResumeLanguage(language).label})`}
+        </button>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button
-            type="submit"
-            disabled={busy || !rawText.trim()}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl disabled:opacity-50 transition shadow"
-          >
-            {isLoading
-              ? `${t.formatting} (${getResumeLanguage(language).label})`
-              : savingHistory
-                ? t.savingHistory
-                : customTemplate
-                  ? `${t.formatAiWithTpl} (${getResumeLanguage(language).label})`
-                  : `${t.formatAi} (${getResumeLanguage(language).label})`}
-          </button>
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+          <p className="mr-auto text-xs text-[var(--shell-subtle)]">{t.syncHint}</p>
           <button
             type="button"
             onClick={handleApplyEdits}
             disabled={!canSyncEdits}
-            className="w-full py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium rounded-xl disabled:opacity-50 transition"
+            className="text-sm font-medium text-[var(--shell-muted)] underline-offset-2 hover:text-[var(--foreground)] hover:underline disabled:opacity-40 disabled:no-underline"
           >
             {t.syncEdits}
           </button>
         </div>
 
-        <p className="text-xs text-gray-500">{t.syncHint}</p>
-
-        {syncMessage && <p className="text-sm text-green-700">{syncMessage}</p>}
-
-        {customTemplate && (
-          <p className="text-xs font-medium text-violet-800 dark:text-violet-200">
-            {t.customTplActive}: {customTemplate.name}
-            {customTemplate.sourceFilename
-              ? ` · ${customTemplate.sourceFilename}`
-              : ''}
-          </p>
+        {syncMessage && (
+          <p className="text-right text-sm text-green-700">{syncMessage}</p>
         )}
 
+        <div className="rounded-2xl border border-[var(--shell-border)] bg-[var(--shell-card)]">
+          <button
+            type="button"
+            onClick={() => setAppearanceOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            aria-expanded={appearanceOpen}
+          >
+            <span className="text-sm font-medium text-[var(--foreground)]">
+              {t.templateAppearance}
+              {customTemplate ? (
+                <span className="ml-2 text-xs font-normal text-violet-700 dark:text-violet-300">
+                  · {customTemplate.name}
+                </span>
+              ) : (
+                <span className="ml-2 text-xs font-normal text-[var(--shell-muted)]">
+                  · {layout}
+                </span>
+              )}
+            </span>
+            <span className="text-xs text-[var(--shell-muted)]">
+              {appearanceOpen ? '−' : '+'}
+            </span>
+          </button>
+          {appearanceOpen && (
+            <div className="border-t border-[var(--shell-border)] px-4 py-4">
+              <ResumeThemePicker
+                layout={layout}
+                colorPresetId={colorPresetId}
+                background={background}
+                accent={accent}
+                language={language}
+                selectedCustomId={customTemplate?.id ?? null}
+                disabled={busy}
+                onLayoutChange={handleLayoutChange}
+                onSelectCustom={setCustomTemplate}
+                onApplyCustomVisuals={applyTemplateVisuals}
+                onColorPresetChange={(presetId) => {
+                  const preset = getColorPreset(presetId);
+                  setColorPresetId(presetId);
+                  setBackground(preset.background);
+                  setAccent(preset.accent);
+                  if (customTemplate) {
+                    const updated: CustomResumeTemplate = {
+                      ...customTemplate,
+                      colorPresetId: presetId,
+                      background: preset.background,
+                      accent: preset.accent,
+                    };
+                    upsertCustomTemplate(updated);
+                    setCustomTemplate(updated);
+                  }
+                }}
+                onBackgroundChange={(color) => {
+                  setBackground(color);
+                  if (customTemplate) {
+                    const updated: CustomResumeTemplate = {
+                      ...customTemplate,
+                      background: color,
+                    };
+                    upsertCustomTemplate(updated);
+                    setCustomTemplate(updated);
+                  }
+                }}
+                onAccentChange={(color) => {
+                  setAccent(color);
+                  if (customTemplate) {
+                    const updated: CustomResumeTemplate = {
+                      ...customTemplate,
+                      accent: color,
+                    };
+                    upsertCustomTemplate(updated);
+                    setCustomTemplate(updated);
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
       </form>
 
-      <ResumeThemePicker
-        layout={layout}
-        colorPresetId={colorPresetId}
-        background={background}
-        accent={accent}
-        pdfTemplateMappedHint={
-          customTemplate ? t.customTplLayoutMapped : null
-        }
-        onLayoutChange={handleLayoutChange}
-        onColorPresetChange={(presetId) => {
-          const preset = getColorPreset(presetId);
-          setColorPresetId(presetId);
-          setBackground(preset.background);
-          setAccent(preset.accent);
-          if (customTemplate) {
-            const updated: CustomResumeTemplate = {
-              ...customTemplate,
-              colorPresetId: presetId,
-              background: preset.background,
-              accent: preset.accent,
-            };
-            upsertCustomTemplate(updated);
-            setCustomTemplate(updated);
-          }
-        }}
-        onBackgroundChange={(color) => {
-          setBackground(color);
-          if (customTemplate) {
-            const updated: CustomResumeTemplate = {
-              ...customTemplate,
-              background: color,
-            };
-            upsertCustomTemplate(updated);
-            setCustomTemplate(updated);
-          }
-        }}
-        onAccentChange={(color) => {
-          setAccent(color);
-          if (customTemplate) {
-            const updated: CustomResumeTemplate = {
-              ...customTemplate,
-              accent: color,
-            };
-            upsertCustomTemplate(updated);
-            setCustomTemplate(updated);
-          }
-        }}
-      />
-
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <p className="text-sm text-gray-600">
+      <div className="flex flex-wrap items-center justify-end gap-3 print:hidden">
+        <p className="mr-auto text-sm text-[var(--shell-muted)]">
           {showSample && !object && !savedResume
             ? 'Showing sample resume. Paste or upload yours to replace it.'
             : isLoading
               ? 'Streaming formatted resume...'
-              : 'Formatted preview'}
+              : t.previewLabel}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={handleGenerateInterview}
             disabled={!hasGeneratedResume || busy || downloading}
-            className="px-4 py-2 text-sm font-medium rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 disabled:opacity-50 transition"
+            className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
           >
             {interviewLoading ? t.generatingMarkers : t.interviewMarkers}
           </button>
           <button
             type="button"
+            onClick={handleDownloadPdf}
+            disabled={!displayResume?.name || busy || downloading}
+            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
+          >
+            {downloading ? t.generatingPdf : t.downloadPdf}
+          </button>
+          <button
+            type="button"
             onClick={handleCopy}
             disabled={!displayResume?.name || busy || downloading}
-            className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
           >
             {copied ? t.copied : t.copyText}
           </button>
@@ -794,25 +812,17 @@ export default function ResumeTemplate({
             type="button"
             onClick={() => window.print()}
             disabled={!displayResume?.name || busy || downloading}
-            className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
           >
             {t.print}
-          </button>
-          <button
-            type="button"
-            onClick={handleDownloadPdf}
-            disabled={!displayResume?.name || busy || downloading}
-            className="px-4 py-2 text-sm font-medium rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition"
-          >
-            {downloading ? t.generatingPdf : t.downloadPdf}
           </button>
         </div>
       </div>
 
       {liveMarkers.length > 0 && (
         <p className="text-xs text-indigo-700 print:hidden">
-          Circled numbers mark interview hotspots. Click a number for questions & suggested
-          answers. These markers are hidden in Print / PDF export.
+          Circled numbers mark interview hotspots. Click a number for questions &
+          suggested answers. These markers are hidden in Print / PDF export.
         </p>
       )}
 

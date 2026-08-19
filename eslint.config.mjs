@@ -15,7 +15,7 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      // Common for localStorage / URL / auth hydration after mount.
+      // Common for localStorage / URL hydration after mount; keep as warn so CI stays green.
       "react-hooks/set-state-in-effect": "off",
     },
   },

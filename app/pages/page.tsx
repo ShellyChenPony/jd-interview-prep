@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from 'react';
 import AiQuotaBadge from '@/app/components/AiQuotaBadge';
 import AccountMenu from '@/app/components/AccountMenu';
 import SettingsMenu from '@/app/components/SettingsMenu';
+import FeedbackWidget from '@/app/components/FeedbackWidget';
 import InterviewPrep from '@/app/components/InterviewPrep';
 import PracticeBoard from '@/app/components/PracticeBoard';
 import PracticeSidePanel from '@/app/components/PracticeSidePanel';
@@ -235,6 +236,7 @@ function WorkspaceShell() {
           </div>
         </main>
       </div>
+      <FeedbackWidget />
     </div>
   );
 }

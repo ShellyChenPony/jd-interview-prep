@@ -196,6 +196,26 @@ export type UiCopy = {
   authSignOutError: string;
   authMemberBadge: string;
   settings: string;
+  feedbackOpen: string;
+  feedbackTitle: string;
+  feedbackHint: string;
+  feedbackSupportHint: string;
+  feedbackSupportLink: string;
+  feedbackSupportCopied: string;
+  feedbackCategory: string;
+  feedbackCatGeneral: string;
+  feedbackCatBug: string;
+  feedbackCatIdea: string;
+  feedbackCatOther: string;
+  feedbackMessage: string;
+  feedbackMessagePlaceholder: string;
+  feedbackEmail: string;
+  feedbackEmailPlaceholder: string;
+  feedbackSubmit: string;
+  feedbackSubmitting: string;
+  feedbackSuccess: string;
+  feedbackError: string;
+  feedbackClose: string;
 };
 
 const EN: UiCopy = {
@@ -416,6 +436,27 @@ const EN: UiCopy = {
   authSignOutError: 'Could not sign out. Please try again.',
   authMemberBadge: 'Free member',
   settings: 'Settings',
+  feedbackOpen: 'Feedback',
+  feedbackTitle: 'Send feedback',
+  feedbackHint: 'Ideas, bugs, or anything that would make prep easier — we read every note.',
+  feedbackSupportHint:
+    'Stuck or something broken? Contact support and we’ll help you get unblocked.',
+  feedbackSupportLink: 'Contact support',
+  feedbackSupportCopied: 'Support email copied',
+  feedbackCategory: 'Type',
+  feedbackCatGeneral: 'General',
+  feedbackCatBug: 'Bug',
+  feedbackCatIdea: 'Idea',
+  feedbackCatOther: 'Other',
+  feedbackMessage: 'Your message',
+  feedbackMessagePlaceholder: 'What went well? What should we improve?',
+  feedbackEmail: 'Email (optional)',
+  feedbackEmailPlaceholder: 'So we can follow up if needed',
+  feedbackSubmit: 'Send feedback',
+  feedbackSubmitting: 'Sending…',
+  feedbackSuccess: 'Thanks — your feedback was saved.',
+  feedbackError: 'Could not send feedback. Please try again.',
+  feedbackClose: 'Close',
 };
 
 const ZH_CN: UiCopy = {
@@ -621,6 +662,26 @@ const ZH_CN: UiCopy = {
   authSignOutError: '退出失败，请重试。',
   authMemberBadge: '普通用户',
   settings: '设置',
+  feedbackOpen: '反馈',
+  feedbackTitle: '提交反馈',
+  feedbackHint: '想法、问题或改进建议都可以写下来，我们会认真看。',
+  feedbackSupportHint: '如果遇到问题或功能异常，可以联系 support 获取帮助。',
+  feedbackSupportLink: '联系 Support',
+  feedbackSupportCopied: '已复制 Support 邮箱',
+  feedbackCategory: '类型',
+  feedbackCatGeneral: '一般',
+  feedbackCatBug: '问题 / Bug',
+  feedbackCatIdea: '想法',
+  feedbackCatOther: '其他',
+  feedbackMessage: '反馈内容',
+  feedbackMessagePlaceholder: '哪里好用？哪里需要改进？',
+  feedbackEmail: '邮箱（可选）',
+  feedbackEmailPlaceholder: '方便我们必要时回复你',
+  feedbackSubmit: '提交反馈',
+  feedbackSubmitting: '提交中…',
+  feedbackSuccess: '谢谢！反馈已保存。',
+  feedbackError: '提交失败，请稍后再试。',
+  feedbackClose: '关闭',
 };
 
 export function getUiCopy(code: ResumeLanguageCode | string | null | undefined): UiCopy {

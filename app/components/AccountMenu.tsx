@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useAppLanguage } from '@/lib/app-language';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -11,7 +13,8 @@ type AccountMenuProps = {
 
 export default function AccountMenu({ variant = 'shell' }: AccountMenuProps) {
   const { t } = useAppLanguage();
-  const { user, loading, configured, signInWithGoogle, signOut } = useAuth();
+  const router = useRouter();
+  const { user, loading, configured, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,26 +56,15 @@ export default function AccountMenu({ variant = 'shell' }: AccountMenuProps) {
   const homeBtn =
     'rounded-xl border border-[#c5d4e0] bg-white/80 px-3 py-1.5 text-sm font-medium text-[#0f2744] backdrop-blur hover:bg-white';
 
-  const onSignIn = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      await signInWithGoogle();
-    } catch {
-      setError(t.authSignInError);
-      setBusy(false);
-    }
-  };
-
   const onSignOut = async () => {
     setBusy(true);
     setError(null);
     try {
       await signOut();
       setOpen(false);
+      router.replace(`/login?next=${encodeURIComponent('/pages')}`);
     } catch {
       setError(t.authSignOutError);
-    } finally {
       setBusy(false);
     }
   };
@@ -92,22 +84,17 @@ export default function AccountMenu({ variant = 'shell' }: AccountMenuProps) {
   }
 
   if (!user) {
+    const loginHref =
+      variant === 'home'
+        ? `/login?next=${encodeURIComponent('/pages')}`
+        : `/login?next=${encodeURIComponent('/pages')}`;
     return (
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => void onSignIn()}
-          disabled={busy}
-          className={`${variant === 'home' ? homeBtn : shellBtn} disabled:opacity-50`}
-        >
-          {busy ? t.authSigningIn : t.authSignInGoogle}
-        </button>
-        {error ? (
-          <p className="absolute right-0 top-full mt-1 whitespace-nowrap text-xs text-red-600">
-            {error}
-          </p>
-        ) : null}
-      </div>
+      <Link
+        href={loginHref}
+        className={`${variant === 'home' ? homeBtn : shellBtn} inline-flex`}
+      >
+        {t.authSignInGoogle}
+      </Link>
     );
   }
 

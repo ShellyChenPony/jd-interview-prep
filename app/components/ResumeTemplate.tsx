@@ -626,10 +626,6 @@ export default function ResumeTemplate({
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4 print:hidden">
         <div className="space-y-2">
-          <p className="text-sm text-[var(--shell-muted)]">{t.resumeHelp}</p>
-          {fileName && (
-            <p className="text-xs text-[var(--shell-subtle)]">Loaded: {fileName}</p>
-          )}
           <div className="flex flex-wrap items-center justify-end gap-2">
             <input
               ref={fileInputRef}
@@ -655,6 +651,10 @@ export default function ResumeTemplate({
               {t.resetSample}
             </button>
           </div>
+          <p className="text-sm text-[var(--shell-muted)]">{t.resumeHelp}</p>
+          {fileName && (
+            <p className="text-xs text-[var(--shell-subtle)]">Loaded: {fileName}</p>
+          )}
         </div>
 
         <textarea

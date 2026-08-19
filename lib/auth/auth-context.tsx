@@ -28,7 +28,7 @@ type AuthContextValue = {
   loading: boolean;
   configured: boolean;
   refresh: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (next?: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -103,12 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [configured, refresh]);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (next = '/pages') => {
     if (!configured) return;
     const supabase = createBrowserSupabaseClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-      window.location.pathname.startsWith('/pages') ? '/pages' : '/pages'
-    )}`;
+    const safeNext = next.startsWith('/') ? next : '/pages';
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },

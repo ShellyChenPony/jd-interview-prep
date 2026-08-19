@@ -1,28 +1,23 @@
 import { NextResponse } from 'next/server';
 import { getAppEnv } from '@/lib/app-env';
+import { ownerFilter, resolveOwnerIdentity } from '@/lib/auth/identity';
 import { parseInterviewMarkers } from '@/lib/resume-interview';
 import { ResumeTemplateSchema } from '@/lib/resume-template';
 import { getSupabaseServer, isSupabaseConfigured } from '@/lib/supabase/server';
 
 type Params = { params: Promise<{ id: string }> };
 
-function deviceIdFrom(req: Request): string | null {
-  const id = req.headers.get('x-device-id')?.trim();
-  return id || null;
-}
-
 export async function GET(req: Request, { params }: Params) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
   }
 
-  const deviceId = deviceIdFrom(req);
-  if (!deviceId) {
-    return NextResponse.json({ error: 'Missing device id' }, { status: 400 });
-  }
+  const resolved = await resolveOwnerIdentity(req);
+  if (!resolved.ok) return resolved.response;
 
   const { id } = await params;
   const env = getAppEnv();
+  const owner = ownerFilter(resolved.identity);
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
@@ -30,7 +25,7 @@ export async function GET(req: Request, { params }: Params) {
       'id, name, job_title, source_filename, source_text, language, resume_json, interview_markers_json, created_at'
     )
     .eq('id', id)
-    .eq('device_id', deviceId)
+    .eq(owner.column, owner.value)
     .eq('env', env)
     .is('deleted_at', null)
     .maybeSingle();
@@ -63,10 +58,8 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
   }
 
-  const deviceId = deviceIdFrom(req);
-  if (!deviceId) {
-    return NextResponse.json({ error: 'Missing device id' }, { status: 400 });
-  }
+  const resolved = await resolveOwnerIdentity(req);
+  if (!resolved.ok) return resolved.response;
 
   let body: unknown;
   try {
@@ -107,12 +100,13 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const { id } = await params;
   const env = getAppEnv();
+  const owner = ownerFilter(resolved.identity);
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
     .update(updates)
     .eq('id', id)
-    .eq('device_id', deviceId)
+    .eq(owner.column, owner.value)
     .eq('env', env)
     .is('deleted_at', null)
     .select('id, name, job_title, source_filename, language, created_at')
@@ -135,19 +129,18 @@ export async function DELETE(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
   }
 
-  const deviceId = deviceIdFrom(req);
-  if (!deviceId) {
-    return NextResponse.json({ error: 'Missing device id' }, { status: 400 });
-  }
+  const resolved = await resolveOwnerIdentity(req);
+  if (!resolved.ok) return resolved.response;
 
   const { id } = await params;
   const env = getAppEnv();
+  const owner = ownerFilter(resolved.identity);
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('resume_history')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('device_id', deviceId)
+    .eq(owner.column, owner.value)
     .eq('env', env)
     .is('deleted_at', null)
     .select('id')

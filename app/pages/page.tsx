@@ -4,16 +4,18 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import AiQuotaBadge from '@/app/components/AiQuotaBadge';
+import AccountMenu from '@/app/components/AccountMenu';
+import SettingsMenu from '@/app/components/SettingsMenu';
 import InterviewPrep from '@/app/components/InterviewPrep';
 import PracticeBoard from '@/app/components/PracticeBoard';
 import PracticeSidePanel from '@/app/components/PracticeSidePanel';
 import PrepHistoryPanel from '@/app/components/PrepHistoryPanel';
 import ResumeHistoryPanel from '@/app/components/ResumeHistoryPanel';
 import ResumeTemplate from '@/app/components/ResumeTemplate';
+import { AuthProvider } from '@/lib/auth/auth-context';
 import { AppLanguageProvider, useAppLanguage } from '@/lib/app-language';
-import { AppThemeProvider, useAppTheme, type AppTheme } from '@/lib/app-theme';
+import { AppThemeProvider } from '@/lib/app-theme';
 import type { JobCategoryId } from '@/lib/leetcode-catalog';
-import { RESUME_LANGUAGES, type ResumeLanguageCode } from '@/lib/resume-languages';
 
 type TabId = 'resume' | 'interview' | 'practice';
 
@@ -26,40 +28,11 @@ function tabFromSearch(value: string | null): TabId {
 }
 
 function HeaderControls() {
-  const { language, setLanguage, t } = useAppLanguage();
-  const { theme, setTheme } = useAppTheme();
-
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+    <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
       <AiQuotaBadge />
-      <label className="flex items-center gap-2 text-sm text-[var(--shell-muted)]">
-        <span className="hidden sm:inline whitespace-nowrap">{t.language}</span>
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value as ResumeLanguageCode)}
-          className="rounded-full border border-[var(--shell-border)] bg-[var(--shell-card)] px-3 py-1.5 text-sm text-[var(--foreground)] shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-stone-600"
-          aria-label={t.language}
-        >
-          {RESUME_LANGUAGES.map((lang) => (
-            <option key={lang.code} value={lang.code}>
-              {lang.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="flex items-center gap-2 text-sm text-[var(--shell-muted)]">
-        <span className="hidden sm:inline whitespace-nowrap">{t.theme}</span>
-        <select
-          value={theme}
-          onChange={(e) => setTheme(e.target.value as AppTheme)}
-          className="rounded-full border border-[var(--shell-border)] bg-[var(--shell-card)] px-3 py-1.5 text-sm text-[var(--foreground)] shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-stone-600"
-          aria-label={t.theme}
-        >
-          <option value="light">{t.themeLight}</option>
-          <option value="dark">{t.themeDark}</option>
-        </select>
-      </label>
+      <AccountMenu />
+      <SettingsMenu />
     </div>
   );
 }
@@ -158,14 +131,17 @@ function WorkspaceShell() {
             );
           })}
 
-          <button
-            type="button"
-            className="mt-auto md:hidden flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--shell-card)] text-xs font-semibold text-[var(--foreground)] shadow-sm border border-[var(--shell-border)]"
-            onClick={() => setMobileHistoryOpen((v) => !v)}
-            aria-label={t.list}
-          >
-            {t.list}
-          </button>
+          <div className="mt-auto flex flex-col items-center gap-2">
+            <button
+              type="button"
+              className="md:hidden flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--shell-border)] bg-[var(--shell-card)] text-xs font-semibold text-[var(--foreground)] shadow-sm"
+              onClick={() => setMobileHistoryOpen((v) => !v)}
+              aria-label={t.list}
+            >
+              {t.list}
+            </button>
+            <AccountMenu variant="rail" />
+          </div>
         </nav>
 
         <aside
@@ -267,15 +243,17 @@ export default function WorkspacePage() {
   return (
     <AppThemeProvider>
       <AppLanguageProvider>
-        <Suspense
-          fallback={
-            <div className="flex h-dvh items-center justify-center bg-[var(--shell-bg)] text-sm text-[var(--shell-muted)]">
-              Loading…
-            </div>
-          }
-        >
-          <WorkspaceShell />
-        </Suspense>
+        <AuthProvider>
+          <Suspense
+            fallback={
+              <div className="flex h-dvh items-center justify-center bg-[var(--shell-bg)] text-sm text-[var(--shell-muted)]">
+                Loading…
+              </div>
+            }
+          >
+            <WorkspaceShell />
+          </Suspense>
+        </AuthProvider>
       </AppLanguageProvider>
     </AppThemeProvider>
   );

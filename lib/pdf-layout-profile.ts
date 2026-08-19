@@ -117,7 +117,7 @@ export function normalizePdfLayoutProfile(
     base.sidebarSections ?? [],
     SIDEBAR_SECTION_IDS
   );
-  let mainSectionOrder = uniqueSections(
+  const mainSectionOrder = uniqueSections(
     base.mainSectionOrder?.length
       ? base.mainSectionOrder
       : DEFAULT_PDF_LAYOUT_PROFILE.mainSectionOrder,

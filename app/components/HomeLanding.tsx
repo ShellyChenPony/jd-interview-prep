@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import AccountMenu from '@/app/components/AccountMenu';
 import { useAppLanguage } from '@/lib/app-language';
 import { RESUME_LANGUAGES, type ResumeLanguageCode } from '@/lib/resume-languages';
 
@@ -136,6 +137,7 @@ export default function HomeLanding() {
           {t.brand}
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
+          <AccountMenu variant="home" />
           <label className="flex items-center gap-2 text-sm text-[#3d5163]">
             <span className="sr-only">{t.language}</span>
             <select

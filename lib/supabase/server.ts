@@ -10,7 +10,7 @@ export function isSupabaseConfigured(): boolean {
   );
 }
 
-/** Server-only Supabase client. Prefer service role for history APIs. */
+/** Server-only Supabase admin client (service role). Prefer for history APIs. */
 export function getSupabaseServer(): SupabaseClient {
   if (cached) return cached;
 

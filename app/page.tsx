@@ -1,10 +1,13 @@
 import HomeLanding from '@/app/components/HomeLanding';
+import { AuthProvider } from '@/lib/auth/auth-context';
 import { AppLanguageProvider } from '@/lib/app-language';
 
 export default function Home() {
   return (
     <AppLanguageProvider>
-      <HomeLanding />
+      <AuthProvider>
+        <HomeLanding />
+      </AuthProvider>
     </AppLanguageProvider>
   );
 }

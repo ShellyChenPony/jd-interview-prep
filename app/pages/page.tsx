@@ -30,10 +30,9 @@ function tabFromSearch(value: string | null): TabId {
 
 function HeaderControls() {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
       <AiQuotaBadge />
       <AccountMenu />
-      <SettingsMenu />
     </div>
   );
 }
@@ -94,147 +93,152 @@ function WorkspaceShell() {
         : t.practiceSubtitle;
 
   return (
-    <div className="h-dvh overflow-hidden bg-[var(--shell-bg)] text-[var(--foreground)] print:h-auto print:overflow-visible print:bg-white">
-      <div className="flex h-full print:block">
-        <nav
-          aria-label="Main"
-          className="print:hidden z-30 flex w-[72px] shrink-0 flex-col items-center gap-2 border-r border-[var(--shell-border)] bg-[var(--shell-rail)] py-4"
+    <div className="flex h-dvh overflow-hidden bg-[var(--shell-bg)] text-[var(--foreground)] print:h-auto print:overflow-visible print:bg-white">
+      <nav
+        aria-label="Main"
+        className="print:hidden z-30 flex w-[72px] shrink-0 flex-col items-center gap-2 border-r border-[var(--shell-border)] bg-[var(--shell-rail)] py-4"
+      >
+        <Link
+          href="/"
+          title={t.brand}
+          aria-label={`${t.brand} — home`}
+          className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--shell-accent-btn)] text-xs font-bold text-[var(--shell-accent-btn-text)] transition hover:opacity-90"
         >
-          <Link
-            href="/"
-            title={t.brand}
-            aria-label={`${t.brand} — home`}
-            className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--shell-accent-btn)] text-xs font-bold text-[var(--shell-accent-btn-text)] transition hover:opacity-90"
-          >
-            AI
-          </Link>
-          {navItems.map((item) => {
-            const active = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                title={item.label}
-                aria-label={item.label}
-                aria-current={active ? 'page' : undefined}
-                onClick={() => selectTab(item.id)}
-                className={`flex h-12 w-12 flex-col items-center justify-center rounded-2xl text-[10px] font-semibold transition ${
-                  active
-                    ? 'bg-[var(--shell-active)] text-[var(--foreground)] shadow-sm'
-                    : 'text-[var(--shell-muted)] hover:bg-[var(--shell-hover)] hover:text-[var(--foreground)]'
-                }`}
-              >
-                <span className="text-sm font-bold tracking-tight">{item.short}</span>
-                <span className="mt-0.5 max-w-[52px] truncate opacity-80">
-                  {navLabel(item.id, t)}
-                </span>
-              </button>
-            );
-          })}
-
-          <div className="mt-auto flex flex-col items-center gap-2">
+          AI
+        </Link>
+        {navItems.map((item) => {
+          const active = activeTab === item.id;
+          return (
             <button
+              key={item.id}
               type="button"
-              className="md:hidden flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--shell-border)] bg-[var(--shell-card)] text-xs font-semibold text-[var(--foreground)] shadow-sm"
-              onClick={() => setMobileHistoryOpen((v) => !v)}
-              aria-label={t.list}
+              title={item.label}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+              onClick={() => selectTab(item.id)}
+              className={`flex h-12 w-12 flex-col items-center justify-center rounded-2xl text-[10px] font-semibold transition ${
+                active
+                  ? 'bg-[var(--shell-active)] text-[var(--foreground)] shadow-sm'
+                  : 'text-[var(--shell-muted)] hover:bg-[var(--shell-hover)] hover:text-[var(--foreground)]'
+              }`}
             >
-              {t.list}
+              <span className="text-sm font-bold tracking-tight">{item.short}</span>
+              <span className="mt-0.5 max-w-[52px] truncate opacity-80">
+                {navLabel(item.id, t)}
+              </span>
             </button>
-            <AccountMenu variant="rail" />
+          );
+        })}
+
+        <div className="mt-auto flex flex-col items-center gap-2">
+          <button
+            type="button"
+            className="md:hidden flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--shell-border)] bg-[var(--shell-card)] text-xs font-semibold text-[var(--foreground)] shadow-sm"
+            onClick={() => setMobileHistoryOpen((v) => !v)}
+            aria-label={t.list}
+          >
+            {t.list}
+          </button>
+          <SettingsMenu variant="rail" />
+          <AccountMenu variant="rail" />
+        </div>
+      </nav>
+
+      <div className="flex min-w-0 flex-1 flex-col print:block">
+        <header className="print:hidden z-40 flex shrink-0 items-center justify-between gap-4 border-b border-[var(--shell-border)] bg-[var(--shell-card)] px-4 py-3 sm:px-6">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--shell-subtle)]">
+              {t.brand}
+            </p>
+            <h1 className="mt-0.5 truncate text-lg font-semibold tracking-tight text-[var(--foreground)] sm:text-xl">
+              {title}
+            </h1>
+            <p className="mt-0.5 hidden truncate text-sm text-[var(--shell-muted)] sm:block">
+              {subtitle}
+            </p>
           </div>
-        </nav>
+          <HeaderControls />
+        </header>
 
-        <aside
-          className={`print:hidden z-20 w-[300px] shrink-0 border-r border-[var(--shell-border)] bg-[var(--shell-panel)] ${
-            mobileHistoryOpen
-              ? 'absolute inset-y-0 left-[72px] block shadow-xl md:static md:shadow-none'
-              : 'hidden md:block'
-          }`}
-        >
-          {activeTab === 'resume' ? (
-            <ResumeHistoryPanel
-              selectedId={resumeHistoryId}
-              refreshKey={resumeHistoryRefreshKey}
-              onSelect={(id) => {
-                setResumeHistoryId(id);
-                setMobileHistoryOpen(false);
-              }}
-            />
-          ) : activeTab === 'interview' ? (
-            <PrepHistoryPanel
-              selectedId={prepHistoryId}
-              refreshKey={prepHistoryRefreshKey}
-              onSelect={(id) => {
-                setPrepHistoryId(id);
-                setMobileHistoryOpen(false);
-              }}
-            />
-          ) : (
-            <PracticeSidePanel
-              selectedCategoryId={practiceCategoryId}
-              selectedHistoryId={practiceHistoryId}
-              refreshKey={practiceHistoryRefreshKey}
-              onSelectCategory={(id) => {
-                setPracticeCategoryId(id);
-                setPracticeHistoryId(null);
-                setMobileHistoryOpen(false);
-              }}
-              onSelectHistory={(id) => {
-                setPracticeHistoryId(id);
-                setMobileHistoryOpen(false);
-              }}
-            />
-          )}
-        </aside>
-
-        <main className="min-w-0 flex-1 overflow-y-auto bg-[var(--shell-main)] print:overflow-visible print:bg-white">
-          <div className="app-workspace mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8 print:max-w-none print:p-0">
-            <header className="mb-6 print:hidden flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--shell-subtle)]">
-                  {t.brand}
-                </p>
-                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-                  {title}
-                </h1>
-                <p className="mt-1 text-sm text-[var(--shell-muted)]">{subtitle}</p>
-              </div>
-              <HeaderControls />
-            </header>
-
+        <div className="relative flex min-h-0 flex-1 print:block">
+          <aside
+            className={`print:hidden z-20 w-[300px] shrink-0 border-r border-[var(--shell-border)] bg-[var(--shell-panel)] ${
+              mobileHistoryOpen
+                ? 'absolute inset-y-0 left-0 block shadow-xl md:static md:shadow-none'
+                : 'hidden md:block'
+            }`}
+          >
             {activeTab === 'resume' ? (
-              <ResumeTemplate
-                activeHistoryId={resumeHistoryId}
-                onHistorySaved={(id) => {
+              <ResumeHistoryPanel
+                selectedId={resumeHistoryId}
+                refreshKey={resumeHistoryRefreshKey}
+                onSelect={(id) => {
                   setResumeHistoryId(id);
-                  setResumeHistoryRefreshKey((n) => n + 1);
+                  setMobileHistoryOpen(false);
                 }}
               />
             ) : activeTab === 'interview' ? (
-              <InterviewPrep
-                activeHistoryId={prepHistoryId}
-                onHistorySaved={(id) => {
+              <PrepHistoryPanel
+                selectedId={prepHistoryId}
+                refreshKey={prepHistoryRefreshKey}
+                onSelect={(id) => {
                   setPrepHistoryId(id);
-                  setPrepHistoryRefreshKey((n) => n + 1);
+                  setMobileHistoryOpen(false);
                 }}
               />
             ) : (
-              <PracticeBoard
+              <PracticeSidePanel
                 selectedCategoryId={practiceCategoryId}
-                activeHistoryId={practiceHistoryId}
-                onCategoryChange={(id) => {
+                selectedHistoryId={practiceHistoryId}
+                refreshKey={practiceHistoryRefreshKey}
+                onSelectCategory={(id) => {
                   setPracticeCategoryId(id);
                   setPracticeHistoryId(null);
+                  setMobileHistoryOpen(false);
                 }}
-                onHistorySaved={(id) => {
+                onSelectHistory={(id) => {
                   setPracticeHistoryId(id);
-                  setPracticeHistoryRefreshKey((n) => n + 1);
+                  setMobileHistoryOpen(false);
                 }}
               />
             )}
-          </div>
-        </main>
+          </aside>
+
+          <main className="min-w-0 flex-1 overflow-y-auto bg-[var(--shell-main)] print:overflow-visible print:bg-white">
+            <div className="app-workspace mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8 print:max-w-none print:p-0">
+              {activeTab === 'resume' ? (
+                <ResumeTemplate
+                  activeHistoryId={resumeHistoryId}
+                  onHistorySaved={(id) => {
+                    setResumeHistoryId(id);
+                    setResumeHistoryRefreshKey((n) => n + 1);
+                  }}
+                />
+              ) : activeTab === 'interview' ? (
+                <InterviewPrep
+                  activeHistoryId={prepHistoryId}
+                  onHistorySaved={(id) => {
+                    setPrepHistoryId(id);
+                    setPrepHistoryRefreshKey((n) => n + 1);
+                  }}
+                />
+              ) : (
+                <PracticeBoard
+                  selectedCategoryId={practiceCategoryId}
+                  activeHistoryId={practiceHistoryId}
+                  onCategoryChange={(id) => {
+                    setPracticeCategoryId(id);
+                    setPracticeHistoryId(null);
+                  }}
+                  onHistorySaved={(id) => {
+                    setPracticeHistoryId(id);
+                    setPracticeHistoryRefreshKey((n) => n + 1);
+                  }}
+                />
+              )}
+            </div>
+          </main>
+        </div>
       </div>
       <FeedbackWidget />
     </div>

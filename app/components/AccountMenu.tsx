@@ -154,7 +154,7 @@ export default function AccountMenu({ variant = 'shell' }: AccountMenuProps) {
           isRail
             ? 'flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-[var(--shell-border)] transition hover:opacity-90'
             : isShell
-              ? 'inline-flex max-w-[min(100vw-8rem,22rem)] items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-[var(--shell-hover)]'
+              ? 'inline-flex max-w-[min(100vw-8rem,20rem)] items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-[var(--shell-hover)]'
               : `flex items-center gap-2 ${homeBtn}`
         }
         aria-expanded={open}
@@ -169,9 +169,9 @@ export default function AccountMenu({ variant = 'shell' }: AccountMenuProps) {
                 {headerName}
               </span>
             </span>
-            <span className="hidden shrink-0 rounded-md bg-[var(--shell-bg)] px-1.5 py-0.5 text-[11px] text-[var(--shell-muted)] sm:inline">
+            {/* <span className="hidden shrink-0 rounded-md bg-[var(--shell-bg)] px-1.5 py-0.5 text-[11px] text-[var(--shell-muted)] sm:inline">
               {t.authMemberBadge}
-            </span>
+            </span> */}
             <svg
               aria-hidden
               viewBox="0 0 20 20"

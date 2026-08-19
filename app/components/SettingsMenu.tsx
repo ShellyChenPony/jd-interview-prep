@@ -5,11 +5,17 @@ import { useAppLanguage } from '@/lib/app-language';
 import { useAppTheme, type AppTheme } from '@/lib/app-theme';
 import { RESUME_LANGUAGES, type ResumeLanguageCode } from '@/lib/resume-languages';
 
-export default function SettingsMenu() {
+type SettingsMenuProps = {
+  /** rail: icon-only in left nav; header: text+icon (unused now) */
+  variant?: 'rail' | 'header';
+};
+
+export default function SettingsMenu({ variant = 'header' }: SettingsMenuProps) {
   const { language, setLanguage, t } = useAppLanguage();
   const { theme, setTheme } = useAppTheme();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const isRail = variant === 'rail';
 
   useEffect(() => {
     if (!open) return;
@@ -36,14 +42,19 @@ export default function SettingsMenu() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-[var(--shell-muted)] transition hover:bg-[var(--shell-hover)] hover:text-[var(--foreground)]"
+        className={
+          isRail
+            ? 'flex h-10 w-10 items-center justify-center rounded-full text-[var(--shell-muted)] transition hover:bg-[var(--shell-hover)] hover:text-[var(--foreground)]'
+            : 'inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-[var(--shell-muted)] transition hover:bg-[var(--shell-hover)] hover:text-[var(--foreground)]'
+        }
         aria-expanded={open}
         aria-label={t.settings}
+        title={t.settings}
       >
         <svg
           aria-hidden
           viewBox="0 0 24 24"
-          className="h-4 w-4"
+          className={isRail ? 'h-5 w-5' : 'h-4 w-4'}
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
@@ -59,13 +70,17 @@ export default function SettingsMenu() {
             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
           />
         </svg>
-        <span className="hidden sm:inline">{t.settings}</span>
+        {!isRail ? <span className="hidden sm:inline">{t.settings}</span> : null}
       </button>
 
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-[var(--shell-border)] bg-[var(--shell-card)] p-3 shadow-lg"
+          className={`absolute z-50 w-64 rounded-xl border border-[var(--shell-border)] bg-[var(--shell-card)] p-3 shadow-lg ${
+            isRail
+              ? 'bottom-0 left-full ml-2'
+              : 'right-0 top-full mt-2'
+          }`}
         >
           <label className="block text-xs font-medium text-[var(--shell-muted)]">
             {t.language}

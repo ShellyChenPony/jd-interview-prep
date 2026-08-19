@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getAppEnv } from '@/lib/app-env';
 import {
+  ownerFilter,
+  ownerWriteFields,
+  resolveOwnerIdentity,
+} from '@/lib/auth/identity';
+import {
   deriveJdTitle,
   listMetaFromRow,
   sanitizeRecommend,
 } from '@/lib/practice-history';
 import { PracticeRecommendSchema } from '@/lib/practice';
 import { getSupabaseServer, isSupabaseConfigured } from '@/lib/supabase/server';
-
-function deviceIdFrom(req: Request): string | null {
-  const id = req.headers.get('x-device-id')?.trim();
-  return id || null;
-}
 
 export async function GET(req: Request) {
   if (!isSupabaseConfigured()) {
@@ -21,17 +21,16 @@ export async function GET(req: Request) {
     );
   }
 
-  const deviceId = deviceIdFrom(req);
-  if (!deviceId) {
-    return NextResponse.json({ error: 'Missing device id' }, { status: 400 });
-  }
+  const resolved = await resolveOwnerIdentity(req);
+  if (!resolved.ok) return resolved.response;
 
   const env = getAppEnv();
+  const owner = ownerFilter(resolved.identity);
   const supabase = getSupabaseServer();
   const { data, error } = await supabase
     .from('practice_history')
     .select('id, jd_title, recommend_json, created_at, updated_at')
-    .eq('device_id', deviceId)
+    .eq(owner.column, owner.value)
     .eq('env', env)
     .is('deleted_at', null)
     .order('updated_at', { ascending: false })
@@ -50,10 +49,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
   }
 
-  const deviceId = deviceIdFrom(req);
-  if (!deviceId) {
-    return NextResponse.json({ error: 'Missing device id' }, { status: 400 });
-  }
+  const resolved = await resolveOwnerIdentity(req);
+  if (!resolved.ok) return resolved.response;
 
   let body: unknown;
   try {
@@ -80,7 +77,7 @@ export async function POST(req: Request) {
   const { data, error } = await supabase
     .from('practice_history')
     .insert({
-      device_id: deviceId,
+      ...ownerWriteFields(resolved.identity),
       env,
       jd_text: jdText,
       jd_title: deriveJdTitle(jdText, recommend.detectedRole),

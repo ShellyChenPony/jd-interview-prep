@@ -132,6 +132,41 @@ $$;
 revoke all on function public.increment_ai_usage(date, text, text, text, text) from public;
 grant execute on function public.increment_ai_usage(date, text, text, text, text) to service_role;
 
+-- Google Auth profiles (synced from auth.users).
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  email text,
+  full_name text,
+  avatar_url text,
+  provider text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists profiles_email_idx on public.profiles (email);
+
+alter table public.profiles enable row level security;
+
+alter table public.resume_history
+  add column if not exists user_id uuid references auth.users (id) on delete set null;
+
+alter table public.interview_prep_history
+  add column if not exists user_id uuid references auth.users (id) on delete set null;
+
+alter table public.practice_history
+  add column if not exists user_id uuid references auth.users (id) on delete set null;
+
+create index if not exists resume_history_user_env_active_idx
+  on public.resume_history (user_id, env, created_at desc)
+  where deleted_at is null and user_id is not null;
+
+create index if not exists interview_prep_history_user_env_active_idx
+  on public.interview_prep_history (user_id, env, updated_at desc)
+  where deleted_at is null and user_id is not null;
+
+create index if not exists practice_history_user_env_active_idx
+  on public.practice_history (user_id, env, updated_at desc)
+  where deleted_at is null and user_id is not null;
 -- Anonymous product feedback from the floating widget.
 create table if not exists public.feedback (
   id uuid primary key default gen_random_uuid(),

@@ -186,6 +186,16 @@ export type UiCopy = {
   homeStep3Body: string;
   homeFooterCta: string;
   homeFooterNote: string;
+  authLoading: string;
+  authSignInGoogle: string;
+  authSigningIn: string;
+  authSignOut: string;
+  authSigningOut: string;
+  authAccount: string;
+  authSignInError: string;
+  authSignOutError: string;
+  authMemberBadge: string;
+  settings: string;
   feedbackOpen: string;
   feedbackTitle: string;
   feedbackHint: string;
@@ -416,6 +426,16 @@ const EN: UiCopy = {
   homeStep3Body: 'Drill LeetCode, generate questions, analyze fit, then draft the letter.',
   homeFooterCta: 'Enter the workspace',
   homeFooterNote: 'Your history stays on this device. Language and theme follow you into the app.',
+  authLoading: 'Account…',
+  authSignInGoogle: 'Sign in with Google',
+  authSigningIn: 'Redirecting…',
+  authSignOut: 'Sign out',
+  authSigningOut: 'Signing out…',
+  authAccount: 'Account',
+  authSignInError: 'Could not start Google sign-in.',
+  authSignOutError: 'Could not sign out. Please try again.',
+  authMemberBadge: 'Free member',
+  settings: 'Settings',
   feedbackOpen: 'Feedback',
   feedbackTitle: 'Send feedback',
   feedbackHint: 'Ideas, bugs, or anything that would make prep easier — we read every note.',
@@ -632,6 +652,16 @@ const ZH_CN: UiCopy = {
   homeStep3Body: '刷 LeetCode、生成面试题、分析匹配度，再写推荐信。',
   homeFooterCta: '进入工作区',
   homeFooterNote: '历史保存在本设备。语言与主题设置会带入工作区。',
+  authLoading: '账户…',
+  authSignInGoogle: '使用 Google 登录',
+  authSigningIn: '正在跳转…',
+  authSignOut: '退出登录',
+  authSigningOut: '正在退出…',
+  authAccount: '账户',
+  authSignInError: '无法开始 Google 登录。',
+  authSignOutError: '退出失败，请重试。',
+  authMemberBadge: '普通用户',
+  settings: '设置',
   feedbackOpen: '反馈',
   feedbackTitle: '提交反馈',
   feedbackHint: '想法、问题或改进建议都可以写下来，我们会认真看。',

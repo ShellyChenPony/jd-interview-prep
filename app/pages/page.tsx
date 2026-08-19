@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import AiQuotaBadge from '@/app/components/AiQuotaBadge';
+import FeedbackWidget from '@/app/components/FeedbackWidget';
 import InterviewPrep from '@/app/components/InterviewPrep';
 import PracticeBoard from '@/app/components/PracticeBoard';
 import PracticeSidePanel from '@/app/components/PracticeSidePanel';
@@ -259,6 +260,7 @@ function WorkspaceShell() {
           </div>
         </main>
       </div>
+      <FeedbackWidget />
     </div>
   );
 }

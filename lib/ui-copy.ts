@@ -196,6 +196,11 @@ export type UiCopy = {
   authSignOutError: string;
   authMemberBadge: string;
   settings: string;
+  loginTitle: string;
+  loginSub: string;
+  loginContinue: string;
+  loginBackHome: string;
+  loginUnavailable: string;
   feedbackOpen: string;
   feedbackTitle: string;
   feedbackHint: string;
@@ -436,6 +441,11 @@ const EN: UiCopy = {
   authSignOutError: 'Could not sign out. Please try again.',
   authMemberBadge: 'Free member',
   settings: 'Settings',
+  loginTitle: 'Sign in to continue',
+  loginSub: 'Use Google to open your workspace and keep history across devices.',
+  loginContinue: 'Continue with Google',
+  loginBackHome: 'Back to home',
+  loginUnavailable: 'Google sign-in is not configured yet.',
   feedbackOpen: 'Feedback',
   feedbackTitle: 'Send feedback',
   feedbackHint: 'Ideas, bugs, or anything that would make prep easier — we read every note.',
@@ -662,6 +672,11 @@ const ZH_CN: UiCopy = {
   authSignOutError: '退出失败，请重试。',
   authMemberBadge: '普通用户',
   settings: '设置',
+  loginTitle: '登录后继续',
+  loginSub: '使用 Google 登录进入工作区，历史可跨设备同步。',
+  loginContinue: '使用 Google 继续',
+  loginBackHome: '返回首页',
+  loginUnavailable: '尚未配置 Google 登录。',
   feedbackOpen: '反馈',
   feedbackTitle: '提交反馈',
   feedbackHint: '想法、问题或改进建议都可以写下来，我们会认真看。',

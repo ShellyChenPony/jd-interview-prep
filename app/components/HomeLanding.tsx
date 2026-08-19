@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, type ReactNode } from 'react';
 import AccountMenu from '@/app/components/AccountMenu';
 import { useAppLanguage } from '@/lib/app-language';
+import { useAuth } from '@/lib/auth/auth-context';
 import { RESUME_LANGUAGES, type ResumeLanguageCode } from '@/lib/resume-languages';
 
 function ProductMock() {
@@ -80,6 +83,39 @@ function ProductMock() {
   );
 }
 
+function WorkspaceEntryButton({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const router = useRouter();
+  const { user, loading, configured } = useAuth();
+
+  const onClick = useCallback(() => {
+    if (loading) return;
+    if (!configured || user) {
+      router.push(href);
+      return;
+    }
+    router.push(`/login?next=${encodeURIComponent(href)}`);
+  }, [loading, configured, user, router, href]);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className={`${className ?? ''} disabled:opacity-60`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function HomeLanding() {
   const { language, setLanguage, t } = useAppLanguage();
 
@@ -153,12 +189,12 @@ export default function HomeLanding() {
               ))}
             </select>
           </label>
-          <Link
+          <WorkspaceEntryButton
             href="/pages"
             className="rounded-xl bg-[#0f2744] px-3.5 py-2 text-sm font-medium text-white transition hover:bg-[#173556]"
           >
             {t.homeOpenApp}
-          </Link>
+          </WorkspaceEntryButton>
         </div>
       </header>
 
@@ -177,24 +213,24 @@ export default function HomeLanding() {
               {t.homeSub}
             </p>
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:flex-wrap">
-              <Link
+              <WorkspaceEntryButton
                 href="/pages?tab=resume"
                 className="home-cta-primary rounded-xl bg-[#0f766e] px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-[#0d6560]"
               >
                 {t.homeCtaResume}
-              </Link>
-              <Link
+              </WorkspaceEntryButton>
+              <WorkspaceEntryButton
                 href="/pages?tab=interview"
                 className="rounded-xl border border-[#0f2744]/20 bg-white/70 px-6 py-3.5 text-center text-sm font-semibold text-[#0f2744] backdrop-blur transition hover:border-[#0f2744]/40 hover:bg-white"
               >
                 {t.homeCtaPrep}
-              </Link>
-              <Link
+              </WorkspaceEntryButton>
+              <WorkspaceEntryButton
                 href="/pages?tab=practice"
                 className="rounded-xl border border-[#0f2744]/20 bg-white/70 px-6 py-3.5 text-center text-sm font-semibold text-[#0f2744] backdrop-blur transition hover:border-[#0f2744]/40 hover:bg-white"
               >
                 {t.homeCtaPractice}
-              </Link>
+              </WorkspaceEntryButton>
             </div>
           </div>
 
@@ -215,9 +251,9 @@ export default function HomeLanding() {
             <ol className="mt-12 divide-y divide-[#0f2744]/10 border-y border-[#0f2744]/10">
               {features.map((feature) => (
                 <li key={feature.n}>
-                  <Link
+                  <WorkspaceEntryButton
                     href={feature.href}
-                    className="group grid gap-3 py-7 transition sm:grid-cols-[4rem_1fr_auto] sm:items-baseline sm:gap-8"
+                    className="group grid w-full gap-3 py-7 text-left transition sm:grid-cols-[4rem_1fr_auto] sm:items-baseline sm:gap-8"
                   >
                     <span className="font-[family-name:var(--font-display)] text-sm font-semibold tabular-nums text-[#0f766e]">
                       {feature.n}
@@ -233,7 +269,7 @@ export default function HomeLanding() {
                     <span className="text-sm font-medium text-[#0f766e] opacity-0 transition group-hover:opacity-100 sm:justify-self-end">
                       →
                     </span>
-                  </Link>
+                  </WorkspaceEntryButton>
                 </li>
               ))}
             </ol>
@@ -267,12 +303,12 @@ export default function HomeLanding() {
               </p>
               <p className="mt-2 max-w-md text-sm text-[#c5d4e0]">{t.homeFooterNote}</p>
             </div>
-            <Link
+            <WorkspaceEntryButton
               href="/pages"
               className="rounded-xl bg-[#0f766e] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#12a193]"
             >
               {t.homeFooterCta}
-            </Link>
+            </WorkspaceEntryButton>
           </div>
         </section>
       </main>

@@ -144,65 +144,67 @@ function WorkspaceShell() {
         </div>
       </nav>
 
-      <div className="flex min-w-0 flex-1 flex-col print:block">
-        <header className="print:hidden z-40 flex shrink-0 items-center justify-between gap-4 border-b border-[var(--shell-border)] bg-[var(--shell-card)] px-4 py-3 sm:px-6">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--shell-subtle)]">
-              {t.brand}
-            </p>
-            <h1 className="mt-0.5 truncate text-lg font-semibold tracking-tight text-[var(--foreground)] sm:text-xl">
-              {title}
-            </h1>
-            <p className="mt-0.5 hidden truncate text-sm text-[var(--shell-muted)] sm:block">
-              {subtitle}
-            </p>
-          </div>
-          <HeaderControls />
-        </header>
+      <div className="relative flex min-w-0 flex-1 print:block">
+        <aside
+          className={`print:hidden z-20 w-[300px] shrink-0 border-r border-[var(--shell-border)] bg-[var(--shell-panel)] ${
+            mobileHistoryOpen
+              ? 'absolute inset-y-0 left-0 block shadow-xl md:static md:shadow-none'
+              : 'hidden md:block'
+          }`}
+        >
+          {activeTab === 'resume' ? (
+            <ResumeHistoryPanel
+              selectedId={resumeHistoryId}
+              refreshKey={resumeHistoryRefreshKey}
+              onSelect={(id) => {
+                setResumeHistoryId(id);
+                setMobileHistoryOpen(false);
+              }}
+            />
+          ) : activeTab === 'interview' ? (
+            <PrepHistoryPanel
+              selectedId={prepHistoryId}
+              refreshKey={prepHistoryRefreshKey}
+              onSelect={(id) => {
+                setPrepHistoryId(id);
+                setMobileHistoryOpen(false);
+              }}
+            />
+          ) : (
+            <PracticeSidePanel
+              selectedCategoryId={practiceCategoryId}
+              selectedHistoryId={practiceHistoryId}
+              refreshKey={practiceHistoryRefreshKey}
+              onSelectCategory={(id) => {
+                setPracticeCategoryId(id);
+                setPracticeHistoryId(null);
+                setMobileHistoryOpen(false);
+              }}
+              onSelectHistory={(id) => {
+                setPracticeHistoryId(id);
+                setMobileHistoryOpen(false);
+              }}
+            />
+          )}
+        </aside>
 
-        <div className="relative flex min-h-0 flex-1 print:block">
-          <aside
-            className={`print:hidden z-20 w-[300px] shrink-0 border-r border-[var(--shell-border)] bg-[var(--shell-panel)] ${
-              mobileHistoryOpen
-                ? 'absolute inset-y-0 left-0 block shadow-xl md:static md:shadow-none'
-                : 'hidden md:block'
-            }`}
-          >
-            {activeTab === 'resume' ? (
-              <ResumeHistoryPanel
-                selectedId={resumeHistoryId}
-                refreshKey={resumeHistoryRefreshKey}
-                onSelect={(id) => {
-                  setResumeHistoryId(id);
-                  setMobileHistoryOpen(false);
-                }}
-              />
-            ) : activeTab === 'interview' ? (
-              <PrepHistoryPanel
-                selectedId={prepHistoryId}
-                refreshKey={prepHistoryRefreshKey}
-                onSelect={(id) => {
-                  setPrepHistoryId(id);
-                  setMobileHistoryOpen(false);
-                }}
-              />
-            ) : (
-              <PracticeSidePanel
-                selectedCategoryId={practiceCategoryId}
-                selectedHistoryId={practiceHistoryId}
-                refreshKey={practiceHistoryRefreshKey}
-                onSelectCategory={(id) => {
-                  setPracticeCategoryId(id);
-                  setPracticeHistoryId(null);
-                  setMobileHistoryOpen(false);
-                }}
-                onSelectHistory={(id) => {
-                  setPracticeHistoryId(id);
-                  setMobileHistoryOpen(false);
-                }}
-              />
-            )}
-          </aside>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="print:hidden relative z-40 shrink-0 border-b border-[var(--shell-border)] bg-[var(--shell-card)]">
+            <div className="mx-auto max-w-4xl px-4 py-3 pr-40 md:px-8 sm:pr-52">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--shell-subtle)]">
+                {t.brand}
+              </p>
+              <h1 className="mt-0.5 truncate text-lg font-semibold tracking-tight text-[var(--foreground)] sm:text-xl">
+                {title}
+              </h1>
+              <p className="mt-0.5 hidden truncate py-[5px] text-sm text-[var(--shell-muted)] sm:block">
+                {subtitle}
+              </p>
+            </div>
+            <div className="absolute right-4 top-1/2 z-10 -translate-y-1/2 sm:right-6">
+              <HeaderControls />
+            </div>
+          </header>
 
           <main className="min-w-0 flex-1 overflow-y-auto bg-[var(--shell-main)] print:overflow-visible print:bg-white">
             <div className="app-workspace mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8 print:max-w-none print:p-0">

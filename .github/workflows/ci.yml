@@ -1,0 +1,52 @@
+name: CI
+
+# Adapted from a Yarn/React Native style CI:
+# - This repo uses npm (package-lock.json), not Yarn
+# - Also run on pull_request so PR checks show up before merge
+# - Prefer pinned actions + npm cache over unpinned @master retry actions
+on:
+  push:
+    branches:
+      - main
+      - feat/resume-template-tab
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testing:
+    name: Lint, typecheck & build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint -- --quiet
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build-time placeholders so Next can compile without real secrets.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: public-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: service-role-key
+          NEXT_PUBLIC_SUPPORT_EMAIL: support@example.com
+
+      # Enable when a test script exists in package.json:
+      # - name: Run tests
+      #   run: npm test -- --ci

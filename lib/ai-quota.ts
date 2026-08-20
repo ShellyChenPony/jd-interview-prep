@@ -18,6 +18,8 @@ const DEVICE_LIMITS: Record<AiFeature, number> = {
   'jd-match': 3,
   'cover-letter': 3,
   'practice-recommend': 5,
+  'knowledge-quiz': 10,
+  'knowledge-quiz-ask': 8,
   'resume-interview': 5,
   'analyze-resume-template': 5,
 };

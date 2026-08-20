@@ -128,6 +128,7 @@ export default function PracticeBoard({
     },
   });
 
+
   useEffect(() => {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
@@ -146,9 +147,9 @@ export default function PracticeBoard({
 
   const handleSelectCategory = (id: JobCategoryId) => {
     setCategoryId(id);
-    setMode('browse');
     setActiveProblemId(null);
     onCategoryChange?.(id);
+    setMode('browse');
   };
 
   const openProblem = (id: string) => {
@@ -187,6 +188,7 @@ export default function PracticeBoard({
     clear();
     submit({ jdText, language });
   };
+
 
   const loadHistory = async (id: string) => {
     setLocalError(null);
@@ -334,7 +336,7 @@ export default function PracticeBoard({
                 setMode(tab.id);
                 setLocalError(null);
               }}
-              className={`rounded-full px-4 py-2.5 text-center text-sm transition ${
+              className={`rounded-full px-3 py-2.5 text-center text-sm transition sm:px-4 ${
                 active
                   ? 'bg-[var(--shell-tab-active)] font-semibold text-[var(--shell-tab-active-text)] shadow-sm'
                   : 'font-medium text-[var(--shell-muted)] hover:bg-white/60 hover:text-[var(--foreground)]'
@@ -677,6 +679,8 @@ export default function PracticeBoard({
           )}
         </section>
       )}
+
+
     </div>
   );
 }

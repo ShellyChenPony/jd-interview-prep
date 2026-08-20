@@ -29,6 +29,7 @@ import { useAppLanguage } from '@/lib/app-language';
 import {
   DEFAULT_RESUME_LANGUAGE,
   getResumeLanguage,
+  normalizeResumeLanguage,
   type ResumeLanguageCode,
 } from '@/lib/resume-languages';
 import {
@@ -49,7 +50,15 @@ import {
 const ACCEPTED =
   '.txt,.md,.docx,.pdf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
 async function extractTextFromFile(file: File): Promise<string> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `File too large (max ${Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024))}MB). Try a text-based PDF, .docx, or .txt.`
+    );
+  }
+
   const name = file.name.toLowerCase();
 
   if (name.endsWith('.txt') || name.endsWith('.md')) {
@@ -133,6 +142,9 @@ export default function ResumeTemplate({
   onHistorySaved,
 }: Props) {
   const { language, t } = useAppLanguage();
+  /** Language of the currently displayed resume content (labels / PDF). */
+  const [resumeLanguage, setResumeLanguage] =
+    useState<ResumeLanguageCode>(language);
   const [rawText, setRawText] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -186,8 +198,12 @@ export default function ResumeTemplate({
       const parsed = ResumeTemplateSchema.safeParse(finished);
       if (!parsed.success) return;
 
-      const resume = normalizeFormattedResume(parsed.data);
+      const resume = normalizeFormattedResume(
+        parsed.data,
+        pendingSourceRef.current.language
+      );
       setSavedResume(resume);
+      setResumeLanguage(pendingSourceRef.current.language);
       setSourceSnapshot(pendingSourceRef.current.text);
       setSyncMessage(null);
       setInterviewMarkers([]);
@@ -307,7 +323,11 @@ export default function ResumeTemplate({
 
   useEffect(() => {
     pendingSourceRef.current.language = language;
-  }, [language]);
+    // Sample preview follows the UI language; saved/history content keeps its own.
+    if (showSample && !savedResume) {
+      setResumeLanguage(language);
+    }
+  }, [language, showSample, savedResume]);
 
   useEffect(() => {
     customTemplateRef.current = customTemplate;
@@ -384,6 +404,7 @@ export default function ResumeTemplate({
       filename: fileName,
       language,
     };
+    setResumeLanguage(language);
     const tpl = customTemplateRef.current;
     submit({
       resumeText: trimmed,
@@ -409,7 +430,7 @@ export default function ResumeTemplate({
     setInterviewDrawerOpen(false);
     submitInterview({
       resume: full,
-      language,
+      language: resumeLanguage,
       // Help the model avoid repeating the same lines/questions on regenerate.
       previousAnchors,
     });
@@ -516,6 +537,7 @@ export default function ResumeTemplate({
     setSyncMessage(null);
     setShowSample(true);
     setSavedResume(null);
+    setResumeLanguage(language);
     setSourceSnapshot('');
     setInterviewMarkers([]);
     setActiveMarker(null);
@@ -550,7 +572,7 @@ export default function ResumeTemplate({
     try {
       await downloadResumePdf({
         resume: full,
-        language,
+        language: resumeLanguage,
         personName: full.name,
         previewElement: document.getElementById('resume-print'),
         layoutProfile: activeLayoutProfile,
@@ -586,7 +608,11 @@ export default function ResumeTemplate({
 
       clear();
       setShowSample(false);
-      setSavedResume(data.item.resume_json);
+      const historyLanguage = normalizeResumeLanguage(data.item.language);
+      setResumeLanguage(historyLanguage);
+      setSavedResume(
+        normalizeFormattedResume(data.item.resume_json, historyLanguage)
+      );
       setRawText(data.item.source_text || '');
       setSourceSnapshot(data.item.source_text || '');
       setFileName(data.item.source_filename);
@@ -838,7 +864,7 @@ export default function ResumeTemplate({
 
       <ResumePreview
         resume={displayResume}
-        language={language}
+        language={resumeLanguage}
         layout={layout}
         colorPresetId={colorPresetId}
         background={background}

@@ -4,8 +4,8 @@ import { extractText, getDocumentProxy } from 'unpdf';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-/** Stay under Vercel request body limits. */
-const MAX_BYTES = 4 * 1024 * 1024;
+/** Stay under typical host / proxy body limits. */
+const MAX_BYTES = 20 * 1024 * 1024;
 
 export async function POST(req: Request) {
   let formData: FormData;
@@ -13,7 +13,10 @@ export async function POST(req: Request) {
     formData = await req.formData();
   } catch {
     return Response.json(
-      { error: 'Invalid upload. File may be too large for the server.' },
+      {
+        error:
+          'Invalid upload. File may be too large or corrupted (max 20MB). Try a smaller PDF, .docx, or .txt.',
+      },
       { status: 400 }
     );
   }
@@ -23,8 +26,15 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Missing file' }, { status: 400 });
   }
 
+  if (file.size <= 0) {
+    return Response.json({ error: 'Empty file' }, { status: 400 });
+  }
+
   if (file.size > MAX_BYTES) {
-    return Response.json({ error: 'File too large (max 4MB)' }, { status: 400 });
+    return Response.json(
+      { error: 'File too large (max 20MB). Try exporting a text-based PDF or .docx.' },
+      { status: 400 }
+    );
   }
 
   const name = (file instanceof File ? file.name : 'upload').toLowerCase();

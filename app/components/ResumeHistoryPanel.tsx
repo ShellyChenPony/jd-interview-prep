@@ -136,8 +136,8 @@ export default function ResumeHistoryPanel({
                       <div
                         className={`rounded-2xl border px-3 py-3 transition ${
                           active
-                            ? 'border-[var(--shell-border)] bg-[var(--shell-card)] shadow-sm'
-                            : 'border-transparent bg-[var(--shell-card)]/50 hover:bg-[var(--shell-card)] hover:border-[var(--shell-border)]'
+                            ? 'border-[var(--shell-list-selected-border)] bg-[var(--shell-list-selected)] shadow-sm'
+                            : 'border-transparent hover:bg-[var(--shell-list-hover)]'
                         }`}
                       >
                         <button
@@ -149,7 +149,7 @@ export default function ResumeHistoryPanel({
                             <span
                               className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
                                 active
-                                  ? 'bg-[var(--foreground)]'
+                                  ? 'bg-[var(--shell-tab-active)]'
                                   : 'bg-[var(--shell-subtle)]'
                               }`}
                             />

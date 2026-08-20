@@ -104,26 +104,244 @@ function writeSectionTitle(w: PdfWriter, title: string) {
   w.y += 3;
 }
 
-function addCanvasToPdf(canvas: HTMLCanvasElement, personName?: string) {
-  const imgData = canvas.toDataURL('image/png');
+const PDF_PAGE_MARGIN_MM = 12;
+
+type PdfBreakPoint = { y: number; kind: 'section' | 'item' };
+
+function withPdfBreak(node: HTMLElement): HTMLElement {
+  node.setAttribute('data-pdf-break', 'before');
+  return node;
+}
+
+/** Section titles — keep with following content (avoid orphan headers). */
+function withPdfSectionBreak(node: HTMLElement): HTMLElement {
+  node.setAttribute('data-pdf-break', 'section');
+  return node;
+}
+
+function collectBreakPoints(root: HTMLElement, scale: number): PdfBreakPoint[] {
+  const rootTop = root.getBoundingClientRect().top;
+  const points: PdfBreakPoint[] = [];
+  root.querySelectorAll('[data-pdf-break]').forEach((node) => {
+    const kindAttr = (node as HTMLElement).getAttribute('data-pdf-break');
+    const kind = kindAttr === 'section' ? 'section' : 'item';
+    const top = (node as HTMLElement).getBoundingClientRect().top - rootTop;
+    if (Number.isFinite(top) && top > 0) {
+      points.push({ y: Math.round(top * scale), kind });
+    }
+  });
+  points.sort((a, b) => a.y - b.y || (a.kind === 'section' ? -1 : 1));
+  const deduped: PdfBreakPoint[] = [];
+  for (const point of points) {
+    const prev = deduped[deduped.length - 1];
+    if (prev && prev.y === point.y) {
+      // Prefer section marker when y collides.
+      if (point.kind === 'section') prev.kind = 'section';
+      continue;
+    }
+    deduped.push({ ...point });
+  }
+  return deduped;
+}
+
+/**
+ * If a section title would sit alone at the bottom of this page
+ * (no following item content before the cut), move the cut above the title.
+ */
+function avoidOrphanSectionHeaders(
+  startY: number,
+  endY: number,
+  breaks: PdfBreakPoint[],
+  pageSpan: number
+): number {
+  const minKeep = Math.floor(pageSpan * 0.35);
+  let adjusted = endY;
+
+  for (let i = 0; i < breaks.length; i++) {
+    const point = breaks[i];
+    if (point.kind !== 'section') continue;
+    if (point.y < startY || point.y >= adjusted) continue;
+
+    const nextItem = breaks.find(
+      (candidate, index) =>
+        index > i && candidate.kind === 'item' && candidate.y > point.y
+    );
+    const hasItemOnPage =
+      nextItem != null && nextItem.y > point.y && nextItem.y < adjusted;
+
+    // Orphan: title on this page, first content starts on/after the cut.
+    if (!hasItemOnPage && point.y > startY + minKeep) {
+      adjusted = Math.min(adjusted, point.y);
+    }
+  }
+
+  return adjusted;
+}
+
+function parseHexRgb(hex: string): [number, number, number] {
+  const raw = hex.trim().replace('#', '');
+  if (raw.length === 3) {
+    return [
+      parseInt(raw[0] + raw[0], 16),
+      parseInt(raw[1] + raw[1], 16),
+      parseInt(raw[2] + raw[2], 16),
+    ];
+  }
+  if (raw.length >= 6) {
+    return [
+      parseInt(raw.slice(0, 2), 16),
+      parseInt(raw.slice(2, 4), 16),
+      parseInt(raw.slice(4, 6), 16),
+    ];
+  }
+  return [255, 255, 255];
+}
+
+/** Score how empty a canvas row is vs background (1 = blank). */
+function rowEmptinessScore(
+  ctx: CanvasRenderingContext2D,
+  y: number,
+  width: number,
+  bg: [number, number, number]
+): number {
+  const row = Math.max(0, Math.min(y, ctx.canvas.height - 1));
+  const data = ctx.getImageData(0, row, width, 1).data;
+  let close = 0;
+  const step = Math.max(1, Math.floor(width / 120));
+  let samples = 0;
+  for (let x = 0; x < width; x += step) {
+    const i = x * 4;
+    const dr = Math.abs(data[i] - bg[0]);
+    const dg = Math.abs(data[i + 1] - bg[1]);
+    const db = Math.abs(data[i + 2] - bg[2]);
+    if (dr + dg + db < 36) close += 1;
+    samples += 1;
+  }
+  return samples ? close / samples : 0;
+}
+
+/**
+ * Pick a cut line at or above idealEnd so we don't split mid-block when possible.
+ * Prefer item markers, then section markers, then blank rows, else hard cut.
+ */
+function chooseBreakY(
+  canvas: HTMLCanvasElement,
+  startY: number,
+  idealEnd: number,
+  breaks: PdfBreakPoint[],
+  background: string
+): number {
+  if (idealEnd >= canvas.height) return canvas.height;
+
+  const pageSpan = idealEnd - startY;
+  const minKeep = Math.floor(pageSpan * 0.5);
+  const searchStart = startY + minKeep;
+
+  let bestItem: number | null = null;
+  let bestSection: number | null = null;
+  for (const point of breaks) {
+    if (point.y <= searchStart || point.y > idealEnd) continue;
+    if (point.kind === 'item') bestItem = point.y;
+    else bestSection = point.y;
+  }
+  // Prefer cutting before an item (keeps previous block intact).
+  // Section cuts are OK too (moves title+content together to next page).
+  const markerEnd = bestItem ?? bestSection;
+  const tentative = markerEnd ?? (() => {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return idealEnd;
+
+    const bg = parseHexRgb(background);
+    const searchWindow = Math.min(Math.floor(pageSpan * 0.4), 320);
+    let bestY = idealEnd;
+    let bestScore = -1;
+
+    for (
+      let row = idealEnd;
+      row >= idealEnd - searchWindow && row > searchStart;
+      row -= 2
+    ) {
+      const score = rowEmptinessScore(ctx, row, canvas.width, bg);
+      const ranked = score + (row - searchStart) / pageSpan / 50;
+      if (ranked > bestScore) {
+        bestScore = ranked;
+        bestY = row;
+        if (score >= 0.94) break;
+      }
+    }
+    return bestY;
+  })();
+
+  return avoidOrphanSectionHeaders(startY, tentative, breaks, pageSpan);
+}
+
+/**
+ * Slice a tall resume canvas into A4 pages with equal margins.
+ * Avoids the old "place full image with negative Y" overlap/truncation bugs.
+ */
+function addCanvasToPdf(
+  canvas: HTMLCanvasElement,
+  personName?: string,
+  options?: { breakPoints?: PdfBreakPoint[]; background?: string }
+) {
+  const breaks = options?.breakPoints ?? [];
+  const background = options?.background ?? '#ffffff';
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 10;
-  const contentWidth = pageWidth - margin * 2;
-  const contentHeight = (canvas.height * contentWidth) / canvas.width;
+  const margin = PDF_PAGE_MARGIN_MM;
+  const usableWidth = pageWidth - margin * 2;
+  const usableHeight = pageHeight - margin * 2;
+  const pageHeightPx = (usableHeight * canvas.width) / usableWidth;
 
-  let heightLeft = contentHeight;
-  let position = margin;
+  let y = 0;
+  let pageIndex = 0;
 
-  pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-  heightLeft -= pageHeight - margin * 2;
+  while (y < canvas.height - 1) {
+    const idealEnd = Math.min(canvas.height, Math.ceil(y + pageHeightPx));
+    let end =
+      idealEnd >= canvas.height
+        ? canvas.height
+        : chooseBreakY(canvas, y, idealEnd, breaks, background);
 
-  while (heightLeft > 0) {
-    position = margin - (contentHeight - heightLeft);
-    pdf.addPage();
-    pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-    heightLeft -= pageHeight - margin * 2;
+    // Always make forward progress.
+    if (end <= y + 8) {
+      end = Math.min(canvas.height, Math.ceil(y + pageHeightPx));
+    }
+
+    const sliceHeight = end - y;
+    const slice = document.createElement('canvas');
+    slice.width = canvas.width;
+    slice.height = sliceHeight;
+    const ctx = slice.getContext('2d');
+    if (!ctx) throw new Error('Could not create PDF page canvas');
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, slice.width, slice.height);
+    ctx.drawImage(
+      canvas,
+      0,
+      y,
+      canvas.width,
+      sliceHeight,
+      0,
+      0,
+      canvas.width,
+      sliceHeight
+    );
+
+    const sliceHeightMm = (sliceHeight / canvas.width) * usableWidth;
+    if (pageIndex > 0) pdf.addPage();
+    pdf.addImage(
+      slice.toDataURL('image/png'),
+      'PNG',
+      margin,
+      margin,
+      usableWidth,
+      Math.min(sliceHeightMm, usableHeight)
+    );
+
+    y = end;
+    pageIndex += 1;
   }
 
   pdf.save(`${safeFilename(personName ?? 'resume')}.pdf`);
@@ -174,10 +392,12 @@ function buildPlainResumeNode(
     .join(' · ');
 
   const sectionTitle = (title: string) =>
-    el(
-      'div',
-      `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.muted};margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid ${theme.accent}55`,
-      [title]
+    withPdfSectionBreak(
+      el(
+        'div',
+        `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.muted};margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid ${theme.accent}55`,
+        [title]
+      )
     );
 
   if (theme.layout === 'banner') {
@@ -252,7 +472,7 @@ function buildPlainResumeNode(
     if (resume.experience.length) {
       target.append(sectionTitle(labels.experience));
       for (const job of resume.experience) {
-        const block = el('div', 'margin:0 0 14px');
+        const block = withPdfBreak(el('div', 'margin:0 0 14px'));
         block.append(
           el('div', 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap', [
             el('div', `font-size:14px;font-weight:700;color:${theme.text}`, [
@@ -281,16 +501,18 @@ function buildPlainResumeNode(
       target.append(sectionTitle(labels.education));
       for (const ed of resume.education) {
         target.append(
-          el(
-            'div',
-            'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 6px',
-            [
-              el('div', `font-size:13px;color:${theme.text}`, [
-                el('span', `font-weight:700;color:${theme.text}`, [ed.degree]),
-                ed.school ? ` — ${ed.school}` : '',
-              ]),
-              el('div', `font-size:12px;color:${theme.muted}`, [ed.period]),
-            ]
+          withPdfBreak(
+            el(
+              'div',
+              'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 6px',
+              [
+                el('div', `font-size:13px;color:${theme.text}`, [
+                  el('span', `font-weight:700;color:${theme.text}`, [ed.degree]),
+                  ed.school ? ` — ${ed.school}` : '',
+                ]),
+                el('div', `font-size:12px;color:${theme.muted}`, [ed.period]),
+              ]
+            )
           )
         );
       }
@@ -299,7 +521,7 @@ function buildPlainResumeNode(
     if (resume.projects.length) {
       target.append(sectionTitle(labels.projects));
       for (const project of resume.projects) {
-        const block = el('div', 'margin:0 0 12px');
+        const block = withPdfBreak(el('div', 'margin:0 0 12px'));
         block.append(
           el('div', `font-size:13px;font-weight:700;color:${theme.text};margin:0 0 2px`, [
             project.name,
@@ -410,23 +632,29 @@ function buildProfilePlainResumeNode(
 
   const sectionTitle = (title: string) => {
     if (profile.sectionTitleStyle === 'accent-bar') {
-      return el(
-        'div',
-        `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.accent};margin:16px 0 8px;padding-left:10px;border-left:3px solid ${theme.accent}`,
-        [title]
+      return withPdfSectionBreak(
+        el(
+          'div',
+          `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.accent};margin:16px 0 8px;padding-left:10px;border-left:3px solid ${theme.accent}`,
+          [title]
+        )
       );
     }
     if (profile.sectionTitleStyle === 'plain-caps') {
-      return el(
-        'div',
-        `font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${theme.accent};margin:16px 0 8px`,
-        [title]
+      return withPdfSectionBreak(
+        el(
+          'div',
+          `font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${theme.accent};margin:16px 0 8px`,
+          [title]
+        )
       );
     }
-    return el(
-      'div',
-      `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.muted};margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid ${theme.accent}55`,
-      [title]
+    return withPdfSectionBreak(
+      el(
+        'div',
+        `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${theme.muted};margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid ${theme.accent}55`,
+        [title]
+      )
     );
   };
 
@@ -456,7 +684,7 @@ function buildProfilePlainResumeNode(
         if (!resume.experience.length) continue;
         target.append(sectionTitle(labels.experience));
         for (const job of resume.experience) {
-          const head = el('div', 'margin:0 0 10px');
+          const head = withPdfBreak(el('div', 'margin:0 0 10px'));
           head.append(
             el('div', `font-size:13px;font-weight:700;color:${theme.text}`, [
               `${job.role}${job.company ? ` — ${job.company}` : ''}`,
@@ -482,18 +710,20 @@ function buildProfilePlainResumeNode(
         target.append(sectionTitle(labels.education));
         for (const ed of resume.education) {
           target.append(
-            el('div', `font-size:13px;color:${theme.text};margin:0 0 4px`, [
-              `${ed.degree}${ed.school ? ` — ${ed.school}` : ''}${
-                ed.period ? ` (${ed.period})` : ''
-              }`,
-            ])
+            withPdfBreak(
+              el('div', `font-size:13px;color:${theme.text};margin:0 0 4px`, [
+                `${ed.degree}${ed.school ? ` — ${ed.school}` : ''}${
+                  ed.period ? ` (${ed.period})` : ''
+                }`,
+              ])
+            )
           );
         }
       } else if (id === 'projects') {
         if (!resume.projects.length) continue;
         target.append(sectionTitle(labels.projects));
         for (const project of resume.projects) {
-          const block = el('div', 'margin:0 0 10px');
+          const block = withPdfBreak(el('div', 'margin:0 0 10px'));
           if (project.name) {
             block.append(
               el('div', `font-size:13px;font-weight:700;color:${theme.text}`, [project.name])
@@ -743,10 +973,12 @@ export async function downloadResumePdfViaPreview(
   host.append(node);
   document.body.append(host);
 
+  const scale = 2;
   try {
+    const breakPoints = collectBreakPoints(node, scale);
     const html2canvas = (await import('html2canvas')).default;
     const canvas = await html2canvas(node, {
-      scale: 2,
+      scale,
       useCORS: true,
       backgroundColor: theme.background,
       logging: false,
@@ -759,7 +991,10 @@ export async function downloadResumePdfViaPreview(
         }
       },
     });
-    addCanvasToPdf(canvas, personName ?? resume.name);
+    addCanvasToPdf(canvas, personName ?? resume.name, {
+      breakPoints,
+      background: theme.background,
+    });
   } finally {
     host.remove();
   }
@@ -880,7 +1115,7 @@ export function downloadResumePdfFromData(
   const resume = coerceResumeForPdf(resumeInput);
   const labels = getSectionLabels(language);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const margin = 14;
+  const margin = PDF_PAGE_MARGIN_MM;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const bg = hexToRgb(theme.background);

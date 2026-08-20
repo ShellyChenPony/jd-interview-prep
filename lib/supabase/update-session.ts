@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 /**
  * Refresh the Auth session cookies on each matched request (Next.js 16 Proxy).
+ * When Auth is configured, unauthenticated visits to /pages redirect to /login.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -35,7 +36,22 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Validates/refreshes the session; do not remove.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+  if (path.startsWith('/pages') && !user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    const nextPath = `${path}${request.nextUrl.search}`;
+    loginUrl.search = `?next=${encodeURIComponent(nextPath)}`;
+    const redirect = NextResponse.redirect(loginUrl);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirect.cookies.set(cookie.name, cookie.value);
+    });
+    return redirect;
+  }
 
   return supabaseResponse;
 }

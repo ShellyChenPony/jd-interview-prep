@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { pinyin } from 'pinyin-pro';
+import type { ResumeLanguageCode } from '@/lib/resume-languages';
 
 export const ResumeTemplateSchema = z.object({
   name: z
@@ -10,7 +12,11 @@ export const ResumeTemplateSchema = z.object({
   contact: z.object({
     email: z.string().describe('Email, or empty string if missing'),
     phone: z.string().describe('Phone, or empty string if missing'),
-    location: z.string().describe('Location / timezone preference, or empty string'),
+    location: z
+      .string()
+      .describe(
+        'Location / timezone. English mode: English place names only (e.g. Shanghai, Pudong), no Chinese characters.'
+      ),
     linkedin: z.string().describe('LinkedIn URL or handle, or empty string'),
     github: z.string().describe('GitHub URL or handle, or empty string'),
   }),
@@ -30,7 +36,9 @@ export const ResumeTemplateSchema = z.object({
           .string()
           .describe('Employer name in the output language (English mode: English name, no Chinese)'),
         role: z.string(),
-        location: z.string().describe('City or Remote'),
+        location: z
+          .string()
+          .describe('City or Remote. English mode: English only, no Chinese characters.'),
         period: z.string().describe('Date range, e.g. 2022 – Present'),
         bullets: z
           .array(z.string())
@@ -120,12 +128,132 @@ export function sortProjectsByExperience(
     .map((item) => item.project);
 }
 
-/** Post-process model output for stable ordering / language expectations. */
-export function normalizeFormattedResume(resume: ResumeTemplate): ResumeTemplate {
+const CJK_RE = /[\u4e00-\u9fff]/;
+
+function hasCjk(value: string): boolean {
+  return CJK_RE.test(value);
+}
+
+function capitalizeWord(word: string): string {
+  if (!word) return word;
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+/** Western resume order: GivenName Surname (陈少利 → Shaoli Chen). */
+export function romanizeChineseName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed || !hasCjk(trimmed)) return trimmed;
+
+  const chars = [...trimmed].filter((ch) => CJK_RE.test(ch));
+  if (chars.length === 0) return trimmed.replace(CJK_RE, '').trim() || trimmed;
+
+  const syllables = chars
+    .map(
+      (ch) =>
+        pinyin(ch, { toneType: 'none', type: 'array' })[0]?.replace(/\s+/g, '') ?? ''
+    )
+    .filter(Boolean);
+
+  if (syllables.length === 1) return capitalizeWord(syllables[0]);
+
+  const surname = capitalizeWord(syllables[0]);
+  const given = capitalizeWord(syllables.slice(1).join(''));
+  return `${given} ${surname}`.trim();
+}
+
+/** Longer phrases first so 上海市浦东新区 wins over 上海. */
+const LOCATION_EN: Array<[string, string]> = [
+  ['上海市浦东新区', 'Shanghai, Pudong'],
+  ['上海市徐汇区', 'Shanghai, Xuhui'],
+  ['上海市闵行区', 'Shanghai, Minhang'],
+  ['北京市朝阳区', 'Beijing, Chaoyang'],
+  ['北京市海淀区', 'Beijing, Haidian'],
+  ['深圳市南山区', 'Shenzhen, Nanshan'],
+  ['杭州市西湖区', 'Hangzhou, Xihu'],
+  ['广州市天河区', 'Guangzhou, Tianhe'],
+  ['浦东新区', 'Pudong'],
+  ['上海市', 'Shanghai'],
+  ['北京市', 'Beijing'],
+  ['深圳市', 'Shenzhen'],
+  ['杭州市', 'Hangzhou'],
+  ['广州市', 'Guangzhou'],
+  ['成都市', 'Chengdu'],
+  ['南京市', 'Nanjing'],
+  ['武汉市', 'Wuhan'],
+  ['苏州市', 'Suzhou'],
+  ['西安市', "Xi'an"],
+  ['重庆市', 'Chongqing'],
+  ['天津市', 'Tianjin'],
+  ['上海', 'Shanghai'],
+  ['北京', 'Beijing'],
+  ['深圳', 'Shenzhen'],
+  ['杭州', 'Hangzhou'],
+  ['广州', 'Guangzhou'],
+  ['成都', 'Chengdu'],
+  ['南京', 'Nanjing'],
+  ['武汉', 'Wuhan'],
+  ['苏州', 'Suzhou'],
+  ['西安', "Xi'an"],
+  ['重庆', 'Chongqing'],
+  ['天津', 'Tianjin'],
+  ['中国', 'China'],
+];
+
+export function localizeLocationToEnglish(location: string): string {
+  let result = location.trim();
+  if (!result || !hasCjk(result)) return result;
+
+  for (const [zh, en] of LOCATION_EN) {
+    result = result.split(zh).join(en);
+  }
+
+  if (hasCjk(result)) {
+    result = result.replace(/[\u4e00-\u9fff]+/g, (chunk) =>
+      pinyin(chunk, { toneType: 'none', type: 'array' })
+        .map((part) => capitalizeWord(String(part).replace(/\s+/g, '')))
+        .filter(Boolean)
+        .join(' ')
+    );
+  }
+
+  return result.replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').trim();
+}
+
+/** Ensure English resumes don't keep CJK in name / locations. */
+export function localizeResumeFields(
+  resume: ResumeTemplate,
+  language: ResumeLanguageCode
+): ResumeTemplate {
+  if (language !== 'en') return resume;
+
   return {
+    ...resume,
+    name: hasCjk(resume.name) ? romanizeChineseName(resume.name) : resume.name,
+    contact: {
+      ...resume.contact,
+      location: hasCjk(resume.contact.location)
+        ? localizeLocationToEnglish(resume.contact.location)
+        : resume.contact.location,
+    },
+    experience: (resume.experience ?? []).map((job) => ({
+      ...job,
+      location: hasCjk(job.location)
+        ? localizeLocationToEnglish(job.location)
+        : job.location,
+    })),
+  };
+}
+
+/** Post-process model output for stable ordering / language expectations. */
+export function normalizeFormattedResume(
+  resume: ResumeTemplate,
+  language: ResumeLanguageCode = 'en'
+): ResumeTemplate {
+  const ordered = {
     ...resume,
     projects: sortProjectsByExperience(resume.experience, resume.projects),
   };
+  return localizeResumeFields(ordered, language);
 }
 
 /** Remote-friendly English resume sample — replace with your own details. */

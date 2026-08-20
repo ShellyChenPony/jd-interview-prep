@@ -53,7 +53,10 @@ Rules:
 - Name field:
   - English mode: MUST be Romanized Latin letters only (Pinyin / English resume form), e.g. 陈少利 → Shaoli Chen. Prefer any Latin name already in the source (email, LinkedIn, filename). NEVER output Chinese characters in name when language is English.
   - Chinese mode: Chinese characters are OK for the name.
-- When output language is English: translate Chinese employer names to common English forms (携程旅游 → Ctrip, 花旗/花旗金融信息服务 → Citi, 同程旅游 → Tongcheng Travel). Do NOT leave Chinese characters in company names, project titles, or descriptions.
+- Location fields (contact.location and each experience.location):
+  - English mode: MUST use English place names only, e.g. 上海市浦东新区 → Shanghai, Pudong; 北京 → Beijing; 深圳 → Shenzhen. NEVER leave Chinese characters in location.
+  - Chinese mode: Chinese place names are OK.
+- When output language is English: translate Chinese employer names to common English forms (携程旅游 → Ctrip, 花旗/花旗金融信息服务 → Citi, 同程旅游 → Tongcheng Travel). Do NOT leave Chinese characters in company names, project titles, descriptions, or locations.
 - When output language is Chinese: use Chinese for prose; well-known English product/tech names may stay as-is.
 - Preserve factual content (employers, dates, schools, skills, project names). Do not invent employers, degrees, or projects.
 - Polish wording into clear, achievement-oriented language (STAR-style bullets with metrics when present).

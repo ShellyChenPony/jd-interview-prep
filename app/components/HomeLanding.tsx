@@ -24,7 +24,7 @@ function ProductMock() {
       </div>
       <div className="grid grid-cols-[56px_1fr] sm:grid-cols-[56px_140px_1fr]">
         <div className="flex flex-col items-center gap-2 border-r border-[#d5e0ea] bg-[#eef3f7] py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#B27D7B] text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0f766e] text-white">
             <svg
               aria-hidden
               viewBox="0 0 24 24"

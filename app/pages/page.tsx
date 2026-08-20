@@ -160,7 +160,7 @@ function WorkspaceShell() {
           href="/"
           title={t.brand}
           aria-label={`${t.brand} — home`}
-          className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#B27D7B] text-white transition hover:opacity-90"
+          className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--shell-tab-active)] text-[var(--shell-tab-active-text)] transition hover:opacity-90"
         >
           <svg
             aria-hidden

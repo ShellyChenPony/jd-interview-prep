@@ -664,7 +664,7 @@ export default function ResumeTemplate({
               type="button"
               disabled={busy}
               onClick={() => fileInputRef.current?.click()}
-              className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
+              className="shell-btn disabled:opacity-50"
             >
               {extracting ? t.extracting : t.uploadFile}
             </button>
@@ -672,7 +672,7 @@ export default function ResumeTemplate({
               type="button"
               onClick={handleResetSample}
               disabled={busy}
-              className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
+              className="shell-btn disabled:opacity-50"
             >
               {t.resetSample}
             </button>
@@ -694,7 +694,7 @@ export default function ResumeTemplate({
         <button
           type="submit"
           disabled={busy || !rawText.trim()}
-          className="w-full rounded-xl bg-blue-600 py-3.5 text-base font-semibold text-white shadow transition hover:bg-blue-700 disabled:opacity-50"
+          className="shell-btn shell-btn-block text-base py-3.5"
         >
           {isLoading
             ? `${t.formatting} (${getResumeLanguage(language).label})`
@@ -814,7 +814,7 @@ export default function ResumeTemplate({
             type="button"
             onClick={handleGenerateInterview}
             disabled={!hasGeneratedResume || busy || downloading}
-            className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:opacity-50"
+            className="shell-btn"
           >
             {interviewLoading ? t.generatingMarkers : t.interviewMarkers}
           </button>
@@ -822,7 +822,7 @@ export default function ResumeTemplate({
             type="button"
             onClick={handleDownloadPdf}
             disabled={!displayResume?.name || busy || downloading}
-            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
+            className="shell-btn"
           >
             {downloading ? t.generatingPdf : t.downloadPdf}
           </button>
@@ -830,7 +830,7 @@ export default function ResumeTemplate({
             type="button"
             onClick={handleCopy}
             disabled={!displayResume?.name || busy || downloading}
-            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
+            className="shell-btn"
           >
             {copied ? t.copied : t.copyText}
           </button>
@@ -838,7 +838,7 @@ export default function ResumeTemplate({
             type="button"
             onClick={() => window.print()}
             disabled={!displayResume?.name || busy || downloading}
-            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
+            className="shell-btn"
           >
             {t.print}
           </button>

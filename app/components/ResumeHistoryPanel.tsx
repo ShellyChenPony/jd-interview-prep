@@ -108,7 +108,7 @@ export default function ResumeHistoryPanel({
           <button
             type="button"
             onClick={onNew}
-            className="shrink-0 rounded-full bg-[var(--shell-accent-btn)] px-3 py-1.5 text-xs font-medium text-[var(--shell-accent-btn-text)] hover:opacity-90"
+            className="shell-btn shell-btn-sm shrink-0"
           >
             {t.new}
           </button>

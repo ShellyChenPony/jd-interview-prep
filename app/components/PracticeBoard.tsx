@@ -315,16 +315,12 @@ export default function PracticeBoard({
       <div
         role="tablist"
         aria-label="Practice modes"
-        className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-2xl"
+        className="grid grid-cols-2 gap-1 rounded-full bg-[var(--shell-list-hover)] p-1"
       >
         {(
           [
-            { id: 'browse' as const, label: t.practiceBrowseTab, hint: t.practiceBrowseHint },
-            {
-              id: 'recommend' as const,
-              label: t.practiceRecommendTab,
-              hint: t.practiceRecommendHint,
-            },
+            { id: 'browse' as const, label: t.practiceBrowseTab },
+            { id: 'recommend' as const, label: t.practiceRecommendTab },
           ] as const
         ).map((tab) => {
           const active = mode === tab.id;
@@ -338,14 +334,13 @@ export default function PracticeBoard({
                 setMode(tab.id);
                 setLocalError(null);
               }}
-              className={`rounded-xl px-3 py-3 text-left transition ${
+              className={`rounded-full px-4 py-2.5 text-center text-sm transition ${
                 active
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--shell-tab-active)] font-semibold text-[var(--shell-tab-active-text)] shadow-sm'
+                  : 'font-medium text-[var(--shell-muted)] hover:bg-white/60 hover:text-[var(--foreground)]'
               }`}
             >
-              <span className="block text-sm font-semibold">{tab.label}</span>
-              <span className="block text-xs mt-0.5 opacity-90">{tab.hint}</span>
+              {tab.label}
             </button>
           );
         })}
@@ -449,7 +444,7 @@ export default function PracticeBoard({
                   <button
                     type="button"
                     onClick={() => void copySql(activeProblem.starterSql || '')}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    className="shell-btn shell-btn-sm"
                   >
                     {sqlCopied ? t.practiceSqlCopied : t.practiceCopySql}
                   </button>
@@ -467,10 +462,8 @@ export default function PracticeBoard({
               <button
                 type="button"
                 onClick={() => toggleDone(activeProblem.id)}
-                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                  isPracticeDone(activeProblem.id)
-                    ? 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200'
-                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                className={`shell-btn ${
+                  isPracticeDone(activeProblem.id) ? 'is-active' : ''
                 }`}
               >
                 {isPracticeDone(activeProblem.id)
@@ -482,7 +475,7 @@ export default function PracticeBoard({
                   href={problemExternalUrl(activeProblem) || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-sky-700 hover:bg-slate-50"
+                  className="shell-btn"
                 >
                   {t.practiceOpenLeetcode} →
                 </a>
@@ -576,7 +569,7 @@ export default function PracticeBoard({
               type="button"
               onClick={handleRecommend}
               disabled={isLoading || !jdText.trim()}
-              className="px-5 py-2.5 rounded-xl bg-orange-700 hover:bg-orange-800 text-white text-sm font-medium disabled:opacity-50 transition"
+              className="shell-btn"
             >
               {isLoading ? t.practiceRecommending : t.practiceRecommendCta}
             </button>

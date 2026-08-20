@@ -581,25 +581,13 @@ export default function InterviewPrep({
       <div
         role="tablist"
         aria-label="Interview prep tools"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl"
+        className="grid grid-cols-1 gap-1 rounded-full bg-[var(--shell-list-hover)] p-1 sm:grid-cols-3"
       >
         {(
           [
-            {
-              id: 'questions' as const,
-              label: t.questionsTab,
-              hint: t.questionsHint,
-            },
-            {
-              id: 'match' as const,
-              label: t.matchTab,
-              hint: t.matchHint,
-            },
-            {
-              id: 'cover' as const,
-              label: t.coverTab,
-              hint: t.coverHint,
-            },
+            { id: 'questions' as const, label: t.questionsTab },
+            { id: 'match' as const, label: t.matchTab },
+            { id: 'cover' as const, label: t.coverTab },
           ] as const
         ).map((tab) => {
           const active = mode === tab.id;
@@ -613,14 +601,13 @@ export default function InterviewPrep({
                 setMode(tab.id);
                 setLocalError(null);
               }}
-              className={`rounded-xl px-3 py-3 text-left transition ${
+              className={`rounded-full px-4 py-2.5 text-center text-sm transition ${
                 active
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[var(--shell-tab-active)] font-semibold text-[var(--shell-tab-active-text)] shadow-sm'
+                  : 'font-medium text-[var(--shell-muted)] hover:bg-white/60 hover:text-[var(--foreground)]'
               }`}
             >
-              <span className="block text-sm font-semibold">{tab.label}</span>
-              <span className="block text-xs mt-0.5 opacity-90">{tab.hint}</span>
+              {tab.label}
             </button>
           );
         })}
@@ -644,7 +631,7 @@ export default function InterviewPrep({
               type="button"
               onClick={handleGenerateQuestions}
               disabled={busy || !jdText.trim()}
-              className="shrink-0 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium disabled:opacity-50 transition"
+              className="shell-btn shrink-0"
             >
               {isLoading ? t.generating : t.generate15}
             </button>
@@ -739,20 +726,20 @@ export default function InterviewPrep({
             <p className="text-sm text-slate-600 mt-1">{t.matchHelp}</p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-            <div className="space-y-2">
-              <label
-                className="block text-sm font-medium text-slate-700"
-                htmlFor="resume-history"
-              >
-                {t.resumeFromHistory}
-              </label>
+          <div className="space-y-2">
+            <label
+              className="block text-sm font-medium text-slate-700"
+              htmlFor="resume-history"
+            >
+              {t.resumeFromHistory}
+            </label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <select
                 id="resume-history"
                 value={selectedHistoryId}
                 onChange={(e) => void handleSelectResume(e.target.value)}
                 disabled={busy || historyLoading}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
+                className="min-w-0 w-full flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--shell-tab-active)] disabled:opacity-50"
               >
                 <option value="">
                   {historyLoading ? t.loading : t.selectResume}
@@ -765,24 +752,23 @@ export default function InterviewPrep({
                   </option>
                 ))}
               </select>
-              {historyError && (
-                <p className="text-xs text-amber-700">{historyError}</p>
-              )}
-              {selectedResumeLabel && (
-                <p className="text-xs text-slate-600">
-                  {t.selected}: {selectedResumeLabel}
-                </p>
-              )}
+              <button
+                type="button"
+                onClick={handleMatch}
+                disabled={busy || !jdText.trim() || !selectedResume}
+                className="shell-btn w-full shrink-0 sm:w-auto"
+              >
+                {matchLoading ? t.analyzing : t.analyzeFit}
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleMatch}
-              disabled={busy || !jdText.trim() || !selectedResume}
-              className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium disabled:opacity-50 transition"
-            >
-              {matchLoading ? t.analyzing : t.analyzeFit}
-            </button>
+            {historyError && (
+              <p className="text-xs text-amber-700">{historyError}</p>
+            )}
+            {selectedResumeLabel && (
+              <p className="text-xs text-slate-600">
+                {t.selected}: {selectedResumeLabel}
+              </p>
+            )}
           </div>
 
           {matchLoading && !liveMatch && (
@@ -909,20 +895,20 @@ export default function InterviewPrep({
             <p className="text-sm text-slate-600 mt-1">{t.coverHelp}</p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-            <div className="space-y-2">
-              <label
-                className="block text-sm font-medium text-slate-700"
-                htmlFor="cover-resume-history"
-              >
-                {t.resumeFromHistory}
-              </label>
+          <div className="space-y-2">
+            <label
+              className="block text-sm font-medium text-slate-700"
+              htmlFor="cover-resume-history"
+            >
+              {t.resumeFromHistory}
+            </label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <select
                 id="cover-resume-history"
                 value={selectedHistoryId}
                 onChange={(e) => void handleSelectResume(e.target.value)}
                 disabled={busy || historyLoading}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="min-w-0 w-full flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--shell-tab-active)] disabled:opacity-50"
               >
                 <option value="">
                   {historyLoading ? t.loading : t.selectResume}
@@ -935,24 +921,23 @@ export default function InterviewPrep({
                   </option>
                 ))}
               </select>
-              {historyError && (
-                <p className="text-xs text-amber-700">{historyError}</p>
-              )}
-              {selectedResumeLabel && (
-                <p className="text-xs text-slate-600">
-                  {t.selected}: {selectedResumeLabel}
-                </p>
-              )}
+              <button
+                type="button"
+                onClick={handleCoverLetter}
+                disabled={busy || !jdText.trim() || !selectedResume}
+                className="shell-btn w-full shrink-0 sm:w-auto"
+              >
+                {coverLoading ? t.generatingCover : t.generateCover}
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleCoverLetter}
-              disabled={busy || !jdText.trim() || !selectedResume}
-              className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-medium disabled:opacity-50 transition"
-            >
-              {coverLoading ? t.generatingCover : t.generateCover}
-            </button>
+            {historyError && (
+              <p className="text-xs text-amber-700">{historyError}</p>
+            )}
+            {selectedResumeLabel && (
+              <p className="text-xs text-slate-600">
+                {t.selected}: {selectedResumeLabel}
+              </p>
+            )}
           </div>
 
           {coverLoading && !liveCover && (

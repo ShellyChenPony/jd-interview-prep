@@ -13,7 +13,7 @@ import PracticeSidePanel from '@/app/components/PracticeSidePanel';
 import PrepHistoryPanel from '@/app/components/PrepHistoryPanel';
 import ResumeHistoryPanel from '@/app/components/ResumeHistoryPanel';
 import ResumeTemplate from '@/app/components/ResumeTemplate';
-import { AuthProvider } from '@/lib/auth/auth-context';
+import { AuthProvider, useAuth } from '@/lib/auth/auth-context';
 import { AppLanguageProvider, useAppLanguage } from '@/lib/app-language';
 import { AppThemeProvider } from '@/lib/app-theme';
 import type { JobCategoryId } from '@/lib/leetcode-catalog';
@@ -43,8 +43,52 @@ function navLabel(tab: TabId, t: ReturnType<typeof useAppLanguage>['t']): string
   return t.practiceNav;
 }
 
+function NavIcon({ tab }: { tab: TabId }) {
+  const common = {
+    viewBox: '0 0 24 24',
+    className: 'h-[18px] w-[18px]',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.75,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true as const,
+  };
+
+  if (tab === 'resume') {
+    return (
+      <svg {...common}>
+        <path d="M8 3h6l4 4v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+        <path d="M14 3v4h4" />
+        <path d="M9.5 12h5" />
+        <path d="M9.5 15.5h5" />
+        <path d="M9.5 19h3" />
+      </svg>
+    );
+  }
+
+  if (tab === 'interview') {
+    return (
+      <svg {...common}>
+        <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H12l-3.5 3.5V15H7.5A2.5 2.5 0 0 1 5 12.5v-6z" />
+        <path d="M9.5 8.5h5" />
+        <path d="M9.5 11.5h3.5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M8 7.5 5.5 12 8 16.5" />
+      <path d="M16 7.5 18.5 12 16 16.5" />
+      <path d="M13.2 6.5 10.8 17.5" />
+    </svg>
+  );
+}
+
 function WorkspaceShell() {
   const { t } = useAppLanguage();
+  const { user, loading, configured } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>(() =>
@@ -55,6 +99,12 @@ function WorkspaceShell() {
   useEffect(() => {
     setActiveTab(tabFromSearch(searchParams.get('tab')));
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!configured || loading || user) return;
+    const next = `/pages${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    router.replace(`/login?next=${encodeURIComponent(next)}`);
+  }, [configured, loading, user, router, searchParams]);
 
   const [resumeHistoryId, setResumeHistoryId] = useState<string | null>(null);
   const [resumeHistoryRefreshKey, setResumeHistoryRefreshKey] = useState(0);
@@ -73,10 +123,10 @@ function WorkspaceShell() {
     router.replace(`/pages?tab=${tab}`, { scroll: false });
   };
 
-  const navItems: { id: TabId; label: string; short: string }[] = [
-    { id: 'resume', label: t.resumeTitle, short: 'CV' },
-    { id: 'interview', label: t.prepTitle, short: 'Q' },
-    { id: 'practice', label: t.practiceTitle, short: 'LC' },
+  const navItems: { id: TabId; label: string }[] = [
+    { id: 'resume', label: t.resumeTitle },
+    { id: 'interview', label: t.prepTitle },
+    { id: 'practice', label: t.practiceTitle },
   ];
 
   const title =
@@ -92,6 +142,14 @@ function WorkspaceShell() {
         ? t.prepSubtitle
         : t.practiceSubtitle;
 
+  if (configured && (loading || !user)) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-[var(--shell-bg)] text-sm text-[var(--shell-muted)]">
+        {t.loading}
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-dvh overflow-hidden bg-[var(--shell-bg)] text-[var(--foreground)] print:h-auto print:overflow-visible print:bg-white">
       <nav
@@ -102,9 +160,23 @@ function WorkspaceShell() {
           href="/"
           title={t.brand}
           aria-label={`${t.brand} — home`}
-          className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--shell-accent-btn)] text-xs font-bold text-[var(--shell-accent-btn-text)] transition hover:opacity-90"
+          className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#B27D7B] text-white transition hover:opacity-90"
         >
-          AI
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="8" width="18" height="12" rx="2" />
+            <path d="M8 8V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" />
+            <path d="M3 13h18" />
+            <path d="M12 12v2" />
+          </svg>
         </Link>
         {navItems.map((item) => {
           const active = activeTab === item.id;
@@ -116,14 +188,14 @@ function WorkspaceShell() {
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
               onClick={() => selectTab(item.id)}
-              className={`flex h-12 w-12 flex-col items-center justify-center rounded-2xl text-[10px] font-semibold transition ${
+              className={`flex h-[3.5rem] w-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[10px] font-semibold transition ${
                 active
-                  ? 'bg-[var(--shell-active)] text-[var(--foreground)] shadow-sm'
+                  ? 'bg-[var(--shell-tab-active)] text-[var(--shell-tab-active-text)] shadow-sm'
                   : 'text-[var(--shell-muted)] hover:bg-[var(--shell-hover)] hover:text-[var(--foreground)]'
               }`}
             >
-              <span className="text-sm font-bold tracking-tight">{item.short}</span>
-              <span className="mt-0.5 max-w-[52px] truncate opacity-80">
+              <NavIcon tab={item.id} />
+              <span className="max-w-[52px] truncate leading-tight opacity-90">
                 {navLabel(item.id, t)}
               </span>
             </button>
@@ -189,15 +261,15 @@ function WorkspaceShell() {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="print:hidden relative z-40 shrink-0 border-b border-[var(--shell-border)] bg-[var(--shell-card)]">
-            <div className="mx-auto max-w-4xl px-4 py-3 pr-40 md:px-8 sm:pr-52">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--shell-subtle)]">
+          <header className="shell-header print:hidden relative z-40 shrink-0">
+            <div className="relative z-10 mx-auto max-w-4xl px-4 py-3 pr-40 md:px-8 sm:pr-52">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/75">
                 {t.brand}
               </p>
-              <h1 className="mt-0.5 truncate text-lg font-semibold tracking-tight text-[var(--foreground)] sm:text-xl">
+              <h1 className="mt-0.5 truncate text-lg font-semibold tracking-tight text-white sm:text-xl">
                 {title}
               </h1>
-              <p className="mt-0.5 hidden truncate py-[5px] text-sm text-[var(--shell-muted)] sm:block">
+              <p className="mt-0.5 hidden truncate py-[5px] text-sm text-white/80 sm:block">
                 {subtitle}
               </p>
             </div>

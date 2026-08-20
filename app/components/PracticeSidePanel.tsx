@@ -127,8 +127,8 @@ export default function PracticeSidePanel({
                     onClick={() => onSelectCategory(cat.id)}
                     className={`w-full rounded-2xl border px-3 py-2.5 text-left transition ${
                       active
-                        ? 'border-[var(--shell-border)] bg-[var(--shell-card)] shadow-sm'
-                        : 'border-transparent bg-[var(--shell-card)]/50 hover:bg-[var(--shell-card)] hover:border-[var(--shell-border)]'
+                        ? 'border-[var(--shell-list-selected-border)] bg-[var(--shell-list-selected)] shadow-sm'
+                        : 'border-transparent hover:bg-[var(--shell-list-hover)]'
                     }`}
                   >
                     <p className="text-sm font-medium">
@@ -163,8 +163,8 @@ export default function PracticeSidePanel({
                   <div
                     className={`rounded-2xl border px-3 py-3 transition ${
                       active
-                        ? 'border-[var(--shell-border)] bg-[var(--shell-card)] shadow-sm'
-                        : 'border-transparent bg-[var(--shell-card)]/50 hover:bg-[var(--shell-card)] hover:border-[var(--shell-border)]'
+                        ? 'border-[var(--shell-list-selected-border)] bg-[var(--shell-list-selected)] shadow-sm'
+                        : 'border-transparent hover:bg-[var(--shell-list-hover)]'
                     }`}
                   >
                     <button

@@ -24,8 +24,22 @@ function ProductMock() {
       </div>
       <div className="grid grid-cols-[56px_1fr] sm:grid-cols-[56px_140px_1fr]">
         <div className="flex flex-col items-center gap-2 border-r border-[#d5e0ea] bg-[#eef3f7] py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0f2744] text-[10px] font-bold text-white">
-            AI
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#B27D7B] text-white">
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="8" width="18" height="12" rx="2" />
+              <path d="M8 8V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" />
+              <path d="M3 13h18" />
+              <path d="M12 12v2" />
+            </svg>
           </div>
           <div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-white text-[9px] font-semibold text-[#0f2744] shadow-sm">
             <span className="text-xs font-bold">CV</span>

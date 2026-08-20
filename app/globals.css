@@ -16,6 +16,11 @@
   --shell-input: #ffffff;
   --shell-hover: rgba(255, 255, 255, 0.7);
   --shell-active: #ffffff;
+  --shell-tab-active: #B27D7B;
+  --shell-tab-active-text: #ffffff;
+  --shell-list-selected: #f0e4e3;
+  --shell-list-selected-border: #c99a98;
+  --shell-list-hover: #ededed;
   --shell-accent-btn: #0c0a09;
   --shell-accent-btn-text: #ffffff;
 }
@@ -34,6 +39,11 @@
   --shell-input: #292524;
   --shell-hover: rgba(255, 255, 255, 0.06);
   --shell-active: #292524;
+  --shell-tab-active: #B27D7B;
+  --shell-tab-active-text: #ffffff;
+  --shell-list-selected: rgba(178, 125, 123, 0.28);
+  --shell-list-selected-border: #B27D7B;
+  --shell-list-hover: rgba(255, 255, 255, 0.08);
   --shell-accent-btn: #fafaf9;
   --shell-accent-btn-text: #0c0a09;
 }
@@ -49,6 +59,67 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Workspace top bar — brand rose with soft folds + grain */
+.shell-header {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border-bottom: 1px solid color-mix(in srgb, var(--shell-tab-active) 78%, #000);
+  background:
+    radial-gradient(120% 180% at 50% -40%, color-mix(in srgb, #fff 22%, transparent), transparent 55%),
+    var(--shell-tab-active);
+  color: var(--shell-tab-active-text);
+}
+
+.shell-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      transparent 28%,
+      rgba(0, 0, 0, 0.045) 28.6%,
+      transparent 36%
+    ),
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      transparent 46%,
+      rgba(0, 0, 0, 0.055) 46.6%,
+      transparent 54%
+    ),
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      transparent 64%,
+      rgba(0, 0, 0, 0.05) 64.6%,
+      transparent 72%
+    ),
+    linear-gradient(
+      118deg,
+      transparent 0%,
+      transparent 80%,
+      rgba(0, 0, 0, 0.04) 80.6%,
+      transparent 88%
+    );
+}
+
+.shell-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: soft-light;
 }
 
 /* Landing page motion */

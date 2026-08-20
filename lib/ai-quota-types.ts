@@ -5,6 +5,8 @@ export type AiFeature =
   | 'jd-match'
   | 'cover-letter'
   | 'practice-recommend'
+  | 'knowledge-quiz'
+  | 'knowledge-quiz-ask'
   | 'resume-interview'
   | 'analyze-resume-template';
 
@@ -14,6 +16,8 @@ export const AI_FEATURES: AiFeature[] = [
   'jd-match',
   'cover-letter',
   'practice-recommend',
+  'knowledge-quiz',
+  'knowledge-quiz-ask',
   'resume-interview',
   'analyze-resume-template',
 ];

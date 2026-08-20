@@ -5,6 +5,7 @@ export type UiCopy = {
   resumeNav: string;
   prepNav: string;
   practiceNav: string;
+  quizNav: string;
   list: string;
   resumeTitle: string;
   resumeSubtitle: string;
@@ -12,10 +13,14 @@ export type UiCopy = {
   prepSubtitle: string;
   practiceTitle: string;
   practiceSubtitle: string;
+  quizTitle: string;
+  quizSubtitle: string;
   resumeHistory: string;
   resumeHistoryHint: string;
   prepHistory: string;
   prepHistoryHint: string;
+  quizHistory: string;
+  quizHistoryHint: string;
   practiceSideTitle: string;
   practiceSideHint: string;
   practiceCategories: string;
@@ -27,10 +32,38 @@ export type UiCopy = {
   noResumeHistory: string;
   noPrepHistory: string;
   noPracticeHistory: string;
+  noQuizHistory: string;
   practiceBrowseTab: string;
   practiceBrowseHint: string;
   practiceRecommendTab: string;
   practiceRecommendHint: string;
+  practiceQuizTab: string;
+  practiceQuizTitle: string;
+  practiceQuizHelp: string;
+  practiceQuizCta: string;
+  practiceQuizGenerating: string;
+  practiceQuizWait: string;
+  practiceQuizSubmit: string;
+  practiceQuizRetry: string;
+  practiceQuizScore: string;
+  practiceQuizCorrect: string;
+  practiceQuizWrong: string;
+  practiceQuizExplain: string;
+  practiceQuizYourAnswer: string;
+  practiceQuizSelectRole: string;
+  practiceQuizLevelLabel: string;
+  practiceQuizLevelJunior: string;
+  practiceQuizLevelMid: string;
+  practiceQuizLevelSenior: string;
+  practiceQuizDifficultyEasy: string;
+  practiceQuizDifficultyMedium: string;
+  practiceQuizDifficultyHard: string;
+  practiceQuizRelated: string;
+  practiceQuizAskPlaceholder: string;
+  practiceQuizAskSend: string;
+  practiceQuizAsking: string;
+  practiceQuizAskYou: string;
+  practiceQuizAskCoach: string;
   practiceRecommendTitle: string;
   practiceRecommendHelp: string;
   practiceRecommendCta: string;
@@ -102,6 +135,8 @@ export type UiCopy = {
   quotaFeatMatch: string;
   quotaFeatCover: string;
   quotaFeatPractice: string;
+  quotaFeatQuiz: string;
+  quotaFeatQuizAsk: string;
   quotaFeatMarkers: string;
   quotaFeatAnalyzeTpl: string;
   syncEdits: string;
@@ -228,6 +263,7 @@ const EN: UiCopy = {
   resumeNav: 'Resume',
   prepNav: 'Prep',
   practiceNav: 'Drill',
+  quizNav: 'Quiz',
   list: 'List',
   resumeTitle: 'Resume Template',
   resumeSubtitle: 'Format your resume with AI, then add interview markers.',
@@ -235,12 +271,16 @@ const EN: UiCopy = {
   prepSubtitle:
     'Paste a JD, generate practice questions, analyze fit, or draft an NZ cover letter.',
   practiceTitle: 'LeetCode Practice',
-  practiceSubtitle:
-    'Browse problems by role, or paste a JD to get a tailored practice list.',
+  practiceSubtitle: 'Browse by role or paste a JD for a tailored practice list.',
+  quizTitle: 'Knowledge Quiz',
+  quizSubtitle:
+    'Generate role-level quizzes, review explanations, and reopen saved sets.',
   resumeHistory: 'Resume History',
   resumeHistoryHint: 'Saved formatted resumes',
   prepHistory: 'Prep History',
   prepHistoryHint: 'JD, questions, fit & cover letters',
+  quizHistory: 'Quiz History',
+  quizHistoryHint: 'Saved knowledge quizzes',
   practiceSideTitle: 'Practice',
   practiceSideHint: 'Roles & JD recommendations',
   practiceCategories: 'Job roles',
@@ -252,10 +292,39 @@ const EN: UiCopy = {
   noResumeHistory: 'No saved resumes yet. Upload and format one on the right.',
   noPrepHistory: 'No prep sessions yet. Paste a JD and generate on the right.',
   noPracticeHistory: 'No JD recommendations yet. Paste a JD on the right.',
+  noQuizHistory: 'No quizzes yet. Choose a role and level, then generate on the right.',
   practiceBrowseTab: 'By role',
   practiceBrowseHint: 'LeetCode sets per job type',
   practiceRecommendTab: 'From JD',
   practiceRecommendHint: 'AI picks what to drill',
+  practiceQuizTab: 'Knowledge quiz',
+  practiceQuizTitle: 'Role knowledge quiz',
+  practiceQuizHelp:
+    'Uses the job role selected on the left. AI generates interview-style concept questions; answer first, then open the knowledge notes.',
+  practiceQuizCta: 'Generate quiz',
+  practiceQuizGenerating: 'Generating…',
+  practiceQuizWait: 'Building role-specific questions…',
+  practiceQuizSubmit: 'Check answers',
+  practiceQuizRetry: 'New quiz',
+  practiceQuizScore: 'Score: {score}/{total}',
+  practiceQuizCorrect: 'Correct',
+  practiceQuizWrong: 'Incorrect',
+  practiceQuizExplain: 'Knowledge notes',
+  practiceQuizYourAnswer: 'Your answer',
+  practiceQuizSelectRole: 'Choose a role and level below, then generate.',
+  practiceQuizLevelLabel: 'Target level',
+  practiceQuizLevelJunior: 'Junior',
+  practiceQuizLevelMid: 'Mid',
+  practiceQuizLevelSenior: 'Senior',
+  practiceQuizDifficultyEasy: 'Easy',
+  practiceQuizDifficultyMedium: 'Medium',
+  practiceQuizDifficultyHard: 'Hard',
+  practiceQuizRelated: 'Go deeper',
+  practiceQuizAskPlaceholder: 'Ask a follow-up about this topic…',
+  practiceQuizAskSend: 'Ask',
+  practiceQuizAsking: 'Thinking…',
+  practiceQuizAskYou: 'You',
+  practiceQuizAskCoach: 'Coach',
   practiceRecommendTitle: 'Recommend problems from JD',
   practiceRecommendHelp:
     'Paste the target JD. We map it to a role track and suggest LeetCode problems from our catalog.',
@@ -336,6 +405,8 @@ const EN: UiCopy = {
   quotaFeatMatch: 'JD × Resume',
   quotaFeatCover: 'Cover letter',
   quotaFeatPractice: 'LeetCode recommend',
+  quotaFeatQuiz: 'Knowledge quiz',
+  quotaFeatQuizAsk: 'Quiz follow-up (8/day)',
   quotaFeatMarkers: 'Interview markers',
   quotaFeatAnalyzeTpl: 'PDF template analyze',
   syncEdits: 'Sync text edits (no AI)',
@@ -474,17 +545,22 @@ const ZH_CN: UiCopy = {
   resumeNav: '简历',
   prepNav: '面试',
   practiceNav: '刷题',
+  quizNav: '测验',
   list: '列表',
   resumeTitle: '简历模板',
   resumeSubtitle: '用 AI 整理简历，再生成面试题标记。',
   prepTitle: '面试准备',
   prepSubtitle: '粘贴 JD，生成练习题、匹配分析，或按新西兰习惯写推荐信。',
   practiceTitle: 'LeetCode 刷题',
-  practiceSubtitle: '按岗位分类浏览题目，或粘贴 JD 获取针对性练习清单。',
+  practiceSubtitle: '按岗位浏览，或粘贴 JD 生成刷题清单。',
+  quizTitle: '知识点测验',
+  quizSubtitle: '按岗位与级别生成试卷，查看解析，并回看历史测验。',
   resumeHistory: '简历历史',
   resumeHistoryHint: '已保存的排版简历',
   prepHistory: '面试历史',
   prepHistoryHint: 'JD、题目、匹配与推荐信',
+  quizHistory: '测验历史',
+  quizHistoryHint: '已保存的知识点测验',
   practiceSideTitle: '刷题',
   practiceSideHint: '岗位分类与 JD 推荐',
   practiceCategories: '岗位分类',
@@ -496,10 +572,39 @@ const ZH_CN: UiCopy = {
   noResumeHistory: '还没有保存的简历。请在右侧上传并排版。',
   noPrepHistory: '还没有面试记录。请在右侧粘贴 JD 并生成。',
   noPracticeHistory: '还没有 JD 推荐。请在右侧粘贴 JD 生成。',
+  noQuizHistory: '还没有测验记录。请在右侧选择岗位和级别后生成。',
   practiceBrowseTab: '按岗位',
   practiceBrowseHint: '各岗位 LeetCode 题单',
   practiceRecommendTab: '按 JD',
   practiceRecommendHint: 'AI 推荐该练哪些题',
+  practiceQuizTab: '知识点测验',
+  practiceQuizTitle: '岗位知识点测验',
+  practiceQuizHelp:
+    '使用左侧选中的岗位。AI 生成面试向概念题；先作答，再展开知识点解析。',
+  practiceQuizCta: '生成试卷',
+  practiceQuizGenerating: '生成中…',
+  practiceQuizWait: '正在生成该岗位的知识点题目…',
+  practiceQuizSubmit: '提交核对',
+  practiceQuizRetry: '再来一套',
+  practiceQuizScore: '得分：{score}/{total}',
+  practiceQuizCorrect: '正确',
+  practiceQuizWrong: '错误',
+  practiceQuizExplain: '知识点解析',
+  practiceQuizYourAnswer: '你的答案',
+  practiceQuizSelectRole: '先在下方选择工种和级别，再生成试卷。',
+  practiceQuizLevelLabel: '目标级别',
+  practiceQuizLevelJunior: '初级',
+  practiceQuizLevelMid: '中级',
+  practiceQuizLevelSenior: '高级',
+  practiceQuizDifficultyEasy: '简单',
+  practiceQuizDifficultyMedium: '中等',
+  practiceQuizDifficultyHard: '困难',
+  practiceQuizRelated: '延伸阅读',
+  practiceQuizAskPlaceholder: '继续追问这道题的知识点…',
+  practiceQuizAskSend: '追问',
+  practiceQuizAsking: '思考中…',
+  practiceQuizAskYou: '你',
+  practiceQuizAskCoach: '教练',
   practiceRecommendTitle: '根据 JD 推荐刷题',
   practiceRecommendHelp:
     '粘贴目标岗位 JD。我们会映射到岗位赛道，并从题库中推荐应练的 LeetCode。',
@@ -574,6 +679,8 @@ const ZH_CN: UiCopy = {
   quotaFeatMatch: 'JD × 简历',
   quotaFeatCover: '推荐信',
   quotaFeatPractice: '刷题推荐',
+  quotaFeatQuiz: '知识点测验',
+  quotaFeatQuizAsk: '测验追问（每日 8 次）',
   quotaFeatMarkers: '面试标记',
   quotaFeatAnalyzeTpl: 'PDF 模板分析',
   syncEdits: '同步文本修改（不调用 AI）',

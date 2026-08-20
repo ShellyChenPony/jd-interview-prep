@@ -15,6 +15,8 @@ const FEATURE_LABEL_KEY: Record<
   | 'quotaFeatMatch'
   | 'quotaFeatCover'
   | 'quotaFeatPractice'
+  | 'quotaFeatQuiz'
+  | 'quotaFeatQuizAsk'
   | 'quotaFeatMarkers'
   | 'quotaFeatAnalyzeTpl'
 > = {
@@ -23,6 +25,8 @@ const FEATURE_LABEL_KEY: Record<
   'jd-match': 'quotaFeatMatch',
   'cover-letter': 'quotaFeatCover',
   'practice-recommend': 'quotaFeatPractice',
+  'knowledge-quiz': 'quotaFeatQuiz',
+  'knowledge-quiz-ask': 'quotaFeatQuizAsk',
   'resume-interview': 'quotaFeatMarkers',
   'analyze-resume-template': 'quotaFeatAnalyzeTpl',
 };

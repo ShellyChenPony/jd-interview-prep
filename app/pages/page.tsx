@@ -8,6 +8,8 @@ import AccountMenu from '@/app/components/AccountMenu';
 import SettingsMenu from '@/app/components/SettingsMenu';
 import FeedbackWidget from '@/app/components/FeedbackWidget';
 import InterviewPrep from '@/app/components/InterviewPrep';
+import KnowledgeQuizBoard from '@/app/components/KnowledgeQuizBoard';
+import KnowledgeQuizHistoryPanel from '@/app/components/KnowledgeQuizHistoryPanel';
 import PracticeBoard from '@/app/components/PracticeBoard';
 import PracticeSidePanel from '@/app/components/PracticeSidePanel';
 import PrepHistoryPanel from '@/app/components/PrepHistoryPanel';
@@ -18,13 +20,14 @@ import { AppLanguageProvider, useAppLanguage } from '@/lib/app-language';
 import { AppThemeProvider } from '@/lib/app-theme';
 import type { JobCategoryId } from '@/lib/leetcode-catalog';
 
-type TabId = 'resume' | 'interview' | 'practice';
+type TabId = 'resume' | 'interview' | 'practice' | 'quiz';
 
 function tabFromSearch(value: string | null): TabId {
   if (value === 'interview' || value === 'prep') return 'interview';
   if (value === 'practice' || value === 'drill' || value === 'leetcode') {
     return 'practice';
   }
+  if (value === 'quiz' || value === 'knowledge-quiz') return 'quiz';
   return 'resume';
 }
 
@@ -40,6 +43,7 @@ function HeaderControls() {
 function navLabel(tab: TabId, t: ReturnType<typeof useAppLanguage>['t']): string {
   if (tab === 'resume') return t.resumeNav;
   if (tab === 'interview') return t.prepNav;
+  if (tab === 'quiz') return t.quizNav;
   return t.practiceNav;
 }
 
@@ -73,6 +77,16 @@ function NavIcon({ tab }: { tab: TabId }) {
         <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H12l-3.5 3.5V15H7.5A2.5 2.5 0 0 1 5 12.5v-6z" />
         <path d="M9.5 8.5h5" />
         <path d="M9.5 11.5h3.5" />
+      </svg>
+    );
+  }
+
+  if (tab === 'quiz') {
+    return (
+      <svg {...common}>
+        <path d="M9 9a3 3 0 1 1 4.2 2.7c-.8.4-1.2.9-1.2 1.8" />
+        <path d="M12 16.5h.01" />
+        <circle cx="12" cy="12" r="9" />
       </svg>
     );
   }
@@ -117,6 +131,10 @@ function WorkspaceShell() {
   const [practiceHistoryId, setPracticeHistoryId] = useState<string | null>(null);
   const [practiceHistoryRefreshKey, setPracticeHistoryRefreshKey] = useState(0);
 
+  const [quizHistoryId, setQuizHistoryId] = useState<string | null>(null);
+  const [quizHistoryRefreshKey, setQuizHistoryRefreshKey] = useState(0);
+  const [quizResetKey, setQuizResetKey] = useState(0);
+
   const selectTab = (tab: TabId) => {
     setActiveTab(tab);
     setMobileHistoryOpen(false);
@@ -127,6 +145,7 @@ function WorkspaceShell() {
     { id: 'resume', label: t.resumeTitle },
     { id: 'interview', label: t.prepTitle },
     { id: 'practice', label: t.practiceTitle },
+    { id: 'quiz', label: t.quizTitle },
   ];
 
   const title =
@@ -134,13 +153,17 @@ function WorkspaceShell() {
       ? t.resumeTitle
       : activeTab === 'interview'
         ? t.prepTitle
-        : t.practiceTitle;
+        : activeTab === 'quiz'
+          ? t.quizTitle
+          : t.practiceTitle;
   const subtitle =
     activeTab === 'resume'
       ? t.resumeSubtitle
       : activeTab === 'interview'
         ? t.prepSubtitle
-        : t.practiceSubtitle;
+        : activeTab === 'quiz'
+          ? t.quizSubtitle
+          : t.practiceSubtitle;
 
   if (configured && (loading || !user)) {
     return (
@@ -242,6 +265,20 @@ function WorkspaceShell() {
                 setMobileHistoryOpen(false);
               }}
             />
+          ) : activeTab === 'quiz' ? (
+            <KnowledgeQuizHistoryPanel
+              selectedId={quizHistoryId}
+              refreshKey={quizHistoryRefreshKey}
+              onSelect={(id) => {
+                setQuizHistoryId(id);
+                setMobileHistoryOpen(false);
+              }}
+              onNew={() => {
+                setQuizHistoryId(null);
+                setQuizResetKey((n) => n + 1);
+                setMobileHistoryOpen(false);
+              }}
+            />
           ) : (
             <PracticeSidePanel
               selectedCategoryId={practiceCategoryId}
@@ -294,6 +331,15 @@ function WorkspaceShell() {
                   onHistorySaved={(id) => {
                     setPrepHistoryId(id);
                     setPrepHistoryRefreshKey((n) => n + 1);
+                  }}
+                />
+              ) : activeTab === 'quiz' ? (
+                <KnowledgeQuizBoard
+                  activeHistoryId={quizHistoryId}
+                  resetKey={quizResetKey}
+                  onHistorySaved={(id) => {
+                    setQuizHistoryId(id);
+                    setQuizHistoryRefreshKey((n) => n + 1);
                   }}
                 />
               ) : (

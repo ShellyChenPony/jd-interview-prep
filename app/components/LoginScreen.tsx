@@ -53,7 +53,7 @@ function LoginScreenInner() {
       </div>
 
       <div className="w-full max-w-md rounded-2xl border border-[#c5d4e0] bg-white/90 p-7 shadow-[0_24px_60px_-28px_rgba(15,39,68,0.35)] backdrop-blur sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0f766e]">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B27D7B]">
           {t.brand}
         </p>
         <h1 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -100,7 +100,7 @@ function LoginScreenInner() {
 
         <Link
           href="/"
-          className="mt-6 inline-flex text-sm font-medium text-[#0f766e] underline-offset-2 hover:underline"
+          className="mt-6 inline-flex text-sm font-medium text-[#B27D7B] underline-offset-2 hover:underline"
         >
           {t.loginBackHome}
         </Link>

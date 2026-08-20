@@ -24,7 +24,7 @@ function ProductMock() {
       </div>
       <div className="grid grid-cols-[56px_1fr] sm:grid-cols-[56px_140px_1fr]">
         <div className="flex flex-col items-center gap-2 border-r border-[#d5e0ea] bg-[#eef3f7] py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0f766e] text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#B27D7B] text-white">
             <svg
               aria-hidden
               viewBox="0 0 24 24"
@@ -72,7 +72,7 @@ function ProductMock() {
           </div>
         </div>
         <div className="space-y-3 bg-white p-4 sm:p-6">
-          <div className="h-3 w-28 rounded bg-[#0f766e]/60" />
+          <div className="h-3 w-28 rounded bg-[#B27D7B]/60" />
           <div className="h-5 w-48 rounded bg-[#0f2744]/90" />
           <div className="space-y-2 pt-1">
             <div className="h-2.5 w-full rounded bg-[#e8eef4]" />
@@ -86,7 +86,7 @@ function ProductMock() {
               <div className="h-2 w-[80%] rounded bg-[#eef3f7]" />
             </div>
             <div className="space-y-2 rounded-xl border border-[#e5edf4] p-3">
-              <div className="h-2 w-20 rounded bg-[#0f766e]/50" />
+              <div className="h-2 w-20 rounded bg-[#B27D7B]/50" />
               <div className="h-2 w-full rounded bg-[#eef3f7]" />
               <div className="h-2 w-[60%] rounded bg-[#eef3f7]" />
             </div>
@@ -193,7 +193,7 @@ export default function HomeLanding() {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as ResumeLanguageCode)}
-              className="rounded-lg border border-[#c5d4e0] bg-white/80 px-2.5 py-1.5 text-sm text-[#0f2744] backdrop-blur focus:outline-none focus:ring-2 focus:ring-[#0f766e]/40"
+              className="rounded-lg border border-[#c5d4e0] bg-white/80 px-2.5 py-1.5 text-sm text-[#0f2744] backdrop-blur focus:outline-none focus:ring-2 focus:ring-[#B27D7B]/40"
               aria-label={t.language}
             >
               {RESUME_LANGUAGES.map((lang) => (
@@ -215,13 +215,13 @@ export default function HomeLanding() {
       <main>
         <section className="relative mx-auto flex min-h-[calc(100dvh-4.5rem)] w-full max-w-6xl flex-col px-5 pb-0 pt-6 sm:px-8 sm:pt-10">
           <div className="home-fade-in-up mx-auto max-w-3xl text-center">
-            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0f766e]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#0f766e]" />
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#B27D7B]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#B27D7B]" />
               {t.homeBadge}
             </p>
             <h1 className="mt-5 font-[family-name:var(--font-display)] text-[2.35rem] leading-[1.12] tracking-tight text-[#0f2744] sm:text-5xl md:text-[3.5rem]">
               {t.homeHeadline}{' '}
-              <span className="text-[#0f766e]">{t.homeHeadlineAccent}</span>
+              <span className="text-[#B27D7B]">{t.homeHeadlineAccent}</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-[#2c3e50] sm:text-lg">
               {t.homeSub}
@@ -229,7 +229,7 @@ export default function HomeLanding() {
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:flex-wrap">
               <WorkspaceEntryButton
                 href="/pages?tab=resume"
-                className="home-cta-primary rounded-xl bg-[#0f766e] px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-[#0d6560]"
+                className="home-cta-primary rounded-xl bg-[#B27D7B] px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-[#9a6866]"
               >
                 {t.homeCtaResume}
               </WorkspaceEntryButton>
@@ -269,18 +269,18 @@ export default function HomeLanding() {
                     href={feature.href}
                     className="group grid w-full gap-3 py-7 text-left transition sm:grid-cols-[4rem_1fr_auto] sm:items-baseline sm:gap-8"
                   >
-                    <span className="font-[family-name:var(--font-display)] text-sm font-semibold tabular-nums text-[#0f766e]">
+                    <span className="font-[family-name:var(--font-display)] text-sm font-semibold tabular-nums text-[#B27D7B]">
                       {feature.n}
                     </span>
                     <div>
-                      <h3 className="text-lg font-semibold text-[#0f2744] group-hover:text-[#0f766e]">
+                      <h3 className="text-lg font-semibold text-[#0f2744] group-hover:text-[#B27D7B]">
                         {feature.title}
                       </h3>
                       <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-[#3d5163] sm:text-base">
                         {feature.body}
                       </p>
                     </div>
-                    <span className="text-sm font-medium text-[#0f766e] opacity-0 transition group-hover:opacity-100 sm:justify-self-end">
+                    <span className="text-sm font-medium text-[#B27D7B] opacity-0 transition group-hover:opacity-100 sm:justify-self-end">
                       →
                     </span>
                   </WorkspaceEntryButton>
@@ -298,7 +298,7 @@ export default function HomeLanding() {
             <ol className="mt-12 grid gap-10 sm:grid-cols-3 sm:gap-8">
               {steps.map((step) => (
                 <li key={step.n} className="relative">
-                  <span className="font-[family-name:var(--font-display)] text-5xl font-semibold leading-none text-[#0f766e]/25">
+                  <span className="font-[family-name:var(--font-display)] text-5xl font-semibold leading-none text-[#B27D7B]/25">
                     {step.n}
                   </span>
                   <h3 className="mt-3 text-lg font-semibold text-[#0f2744]">{step.title}</h3>
@@ -319,7 +319,7 @@ export default function HomeLanding() {
             </div>
             <WorkspaceEntryButton
               href="/pages"
-              className="rounded-xl bg-[#0f766e] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#12a193]"
+              className="rounded-xl bg-[#B27D7B] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#c99a98]"
             >
               {t.homeFooterCta}
             </WorkspaceEntryButton>

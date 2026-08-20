@@ -16,10 +16,10 @@
   --shell-input: #ffffff;
   --shell-hover: rgba(255, 255, 255, 0.7);
   --shell-active: #ffffff;
-  --shell-tab-active: #0f766e;
+  --shell-tab-active: #B27D7B;
   --shell-tab-active-text: #ffffff;
-  --shell-list-selected: #e7f3f2;
-  --shell-list-selected-border: #7eb5b0;
+  --shell-list-selected: #f0e4e3;
+  --shell-list-selected-border: #c99a98;
   --shell-list-hover: #ededed;
   --shell-accent-btn: #0c0a09;
   --shell-accent-btn-text: #ffffff;
@@ -39,10 +39,10 @@
   --shell-input: #292524;
   --shell-hover: rgba(255, 255, 255, 0.06);
   --shell-active: #292524;
-  --shell-tab-active: #0f766e;
+  --shell-tab-active: #B27D7B;
   --shell-tab-active-text: #ffffff;
-  --shell-list-selected: rgba(15, 118, 110, 0.28);
-  --shell-list-selected-border: #0f766e;
+  --shell-list-selected: rgba(178, 125, 123, 0.28);
+  --shell-list-selected-border: #B27D7B;
   --shell-list-hover: rgba(255, 255, 255, 0.08);
   --shell-accent-btn: #fafaf9;
   --shell-accent-btn-text: #0c0a09;
